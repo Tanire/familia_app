@@ -269,9 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Init
     renderExpenses();
-});
 
-// Auto-refresh logic (Generic reload is simplest for now)
-window.addEventListener('storage-updated', () => {
-    location.reload();
+    // Auto-refresh logic without reload (INSIDE THE SCOPE)
+    window.addEventListener('storage-updated', () => {
+        // Decide which one to render based on visibility?
+        // Or just render both (cheap)
+        renderExpenses();
+        renderRecurring();
+    });
 });

@@ -284,8 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderCalendar();
-});
 
-window.addEventListener('storage-updated', () => {
-  location.reload();
+  // Auto-refresh logic without reload (INSIDE SCOPE)
+  window.addEventListener('storage-updated', () => {
+    renderCalendar();
+    if (selectedDate) showDayDetails(selectedDate);
+  });
 });

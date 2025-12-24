@@ -98,8 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     renderList();
-});
 
-window.addEventListener('storage-updated', () => {
-    location.reload();
+    // Auto-refresh logic without reload (INSIDE THE SCOPE)
+    window.addEventListener('storage-updated', () => {
+        renderList();
+    });
 });

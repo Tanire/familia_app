@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryIcon = CATEGORY_ICONS[expense.category] || '📦';
             const categoryName = CATEGORY_NAMES[expense.category] || 'Otros';
 
-            // Backward compatibility for items without category
+            // Backward compatibility
             const displayCategory = expense.category ? categoryName : '';
 
             item.innerHTML = `
@@ -124,4 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     renderExpenses();
+});
+
+// Auto-refresh when sync finishes
+window.addEventListener('storage-updated', () => {
+    location.reload();
 });

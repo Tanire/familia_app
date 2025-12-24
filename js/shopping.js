@@ -16,11 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         items.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = `shopping-item ${item.completed ? 'completed' : ''}`;
-            // Usar data-id si tuviéramos IDs, usaremos index por ahora para simplicidad rápida, 
-            // pero mejor migrar a IDs pronto si sync se complica.
-            // Para consistencia con gastos, usemos un ID simple si es nuevo, pero para legacy support...
-            // Asumamos index es suficiente para local, pero para sync mejor ID. 
-            // Vamos a añadir ID al crear.
 
             div.innerHTML = `
         <div class="checkbox-container" data-index="${index}">
@@ -90,4 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     renderList();
+});
+
+// Auto-refresh when sync finishes
+window.addEventListener('storage-updated', () => {
+    location.reload();
 });

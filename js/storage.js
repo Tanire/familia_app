@@ -66,5 +66,9 @@ const StorageService = {
   getEvents() { return this.get('calendar_events', []); },
   saveEvents(events) { this.set('calendar_events', events); },
   getExpenses() { return this.get('expenses', []); },
-  saveExpenses(expenses) { this.set('expenses', expenses); }
+  saveExpenses(expenses) { this.set('expenses', expenses); },
+
+  // Recurring Bills
+  getRecurringBills() { return this.get('recurring_bills', []); },
+  saveRecurringBills(bills) { this.set('recurring_bills', bills); }
 };

@@ -83,7 +83,8 @@ const SyncService = {
         return {
             calendar_events: StorageService.getEvents(),
             expenses: StorageService.getExpenses(),
-            shopping_list: StorageService.get('shopping_list', [])
+            shopping_list: StorageService.get('shopping_list', []),
+            recurring_bills: StorageService.getRecurringBills()
         };
     },
 
@@ -91,6 +92,7 @@ const SyncService = {
         if (data.calendar_events) StorageService.saveEvents(data.calendar_events);
         if (data.expenses) StorageService.saveExpenses(data.expenses);
         if (data.shopping_list) StorageService.set('shopping_list', data.shopping_list);
+        if (data.recurring_bills) StorageService.saveRecurringBills(data.recurring_bills);
     },
 
     // ---- Smart Merge Logic ----
@@ -132,7 +134,8 @@ const SyncService = {
         const mergedData = {
             calendar_events: this.mergeArrays(localData.calendar_events, cloudData.calendar_events),
             expenses: this.mergeArrays(localData.expenses, cloudData.expenses),
-            shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list)
+            shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list),
+            recurring_bills: this.mergeArrays(localData.recurring_bills, cloudData.recurring_bills)
         };
 
         // 4. Update Local
@@ -143,7 +146,11 @@ const SyncService = {
     }
 };
 
-// UI Logic for Settings Page
+// UI Logic (kept same as before, just update file content to include new SyncService logic)
+// To keep main file small, I am reusing the previous UI portion for settings (it's in settings.html inline or using the same file).
+// Wait, sync-service.js DOES have UI logic at the bottom. I need to preserve it.
+// I will include the UI logic block from previous version.
+
 document.addEventListener('DOMContentLoaded', () => {
     // Only run if elements exist (we are on settings page)
     const tokenInput = document.getElementById('gh-token');
@@ -227,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Local Export/Import logic remains same...
+    // Local Export/Import logic
     exportBtn.addEventListener('click', () => {
         const data = SyncService.getAllLocalData();
         const str = JSON.stringify(data, null, 2);

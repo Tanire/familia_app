@@ -2,33 +2,39 @@ async function checkAutoSync() {
   const token = localStorage.getItem('gh_token');
   const gistId = localStorage.getItem('gh_gist_id');
 
-  if (!token || !gistId || typeof SyncService === 'undefined') return;
-
   const indicator = document.getElementById('sync-indicator');
+
+  if (!token || !gistId || typeof SyncService === 'undefined') {
+    if (indicator) {
+      indicator.innerHTML = '<span style="color: #9CA3AF;">●</span> Desconectado';
+      // Optional: Make it clickable or just informative
+    }
+    return;
+  }
+
   if (indicator) {
     indicator.innerHTML = '<span style="color: #F59E0B;">●</span> Sincronizando...';
   }
 
-  // Smart Sync on Load (Fetch -> Merge -> Update Local)
-  // We reuse the Smart Sync logic from service? 
-  // Actually checkAutoSync was just a download before. 
-  // Now with Smart Merge, we should probably do a full sync even on load to ensure consistency?
-  // OR just download? If we edited offline, download might overwrite local changes if we use restoreData(data) blindly.
-  // SAFE APPROACH ON LOAD:
-  // call syncWithCloud. This merges cloud changes into local (if any local offline changes exist) and pushes back.
-  const success = await SyncService.syncWithCloud(token, gistId);
+  // Smart Sync on Load
+  try {
+    const success = await SyncService.syncWithCloud(token, gistId);
 
-  if (indicator) {
-    if (success) {
-      indicator.innerHTML = '<span style="color: #10B981;">●</span> En línea';
-      setTimeout(() => { indicator.style.opacity = '0.7'; }, 2000);
-    } else {
-      indicator.innerHTML = '<span style="color: #EF4444;">●</span> Error Conexión';
+    if (indicator) {
+      if (success) {
+        indicator.innerHTML = '<span style="color: #10B981;">●</span> En línea';
+        setTimeout(() => { indicator.style.opacity = '0.7'; }, 2000);
+      } else {
+        indicator.innerHTML = '<span style="color: #EF4444;">●</span> Error Sync';
+      }
     }
-  }
 
-  if (success) {
-    window.dispatchEvent(new Event('storage-updated'));
+    if (success) {
+      window.dispatchEvent(new Event('storage-updated'));
+    }
+  } catch (e) {
+    console.error("AutoSync Error:", e);
+    if (indicator) indicator.innerHTML = '<span style="color: #EF4444;">●</span> Error';
   }
 }
 
@@ -43,7 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
     div.id = 'sync-indicator';
     // Bottom center pill styling
     div.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 8px 20px; border-radius: 30px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; gap: 8px; border: 1px solid #E5E7EB; white-space: nowrap;";
-    div.innerHTML = '<span style="color: #9CA3AF;">●</span> Conectando...';
+    // Default text 
+    div.innerHTML = '<span style="color: #9CA3AF;">●</span> Iniciando...';
+
+    // Add click listener to go to settings if disconnected
+    div.addEventListener('click', () => {
+      const txt = div.innerText;
+      if (txt.includes('Desconectado') || txt.includes('Error')) {
+        navigateTo('settings.html');
+      }
+    });
+
     document.body.appendChild(div);
   }
 

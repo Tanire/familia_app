@@ -1,4 +1,4 @@
-const CACHE_NAME = 'familia-app-v3';
+const CACHE_NAME = 'familia-app-v5';
 const ASSETS = [
     './',
     './index.html',
@@ -13,7 +13,9 @@ const ASSETS = [
     './js/shopping.js',
     './js/storage.js',
     './js/sync-service.js',
-    './manifest.json'
+    './manifest.json',
+    './assets/icon-192.png',
+    './assets/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {

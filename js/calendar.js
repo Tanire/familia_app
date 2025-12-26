@@ -340,4 +340,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 50);
   }
 
+  document.getElementById('prev-month').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
+  });
 
+  document.getElementById('next-month').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+  });
+
+  addEventBtn.addEventListener('click', () => openModal());
+  cancelEventBtn.addEventListener('click', closeModal);
+  saveEventBtn.addEventListener('click', saveEvent);
+
+  eventModal.addEventListener('click', (e) => {
+    if (e.target === eventModal) closeModal();
+  });
+
+  renderCalendar();
+
+  // Auto-refresh logic without reload (INSIDE SCOPE)
+  window.addEventListener('storage-updated', () => {
+    renderCalendar();
+    if (selectedDate) showDayDetails(selectedDate);
+  });
+});

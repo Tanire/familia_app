@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
             div.innerHTML = `
         <div class="checkbox-container" data-id="${item.id}">
            <div class="custom-checkbox ${item.completed ? 'checked' : ''}"></div>
-           <span class="item-name">${item.name}</span>
+           <span class="item-name">
+                ${item.name} 
+                ${item.createdBy ? `<small style="font-size:0.7em; color:var(--text-muted); margin-left:8px;">(${item.createdBy})</small>` : ''}
+           </span>
         </div>
         <button class="delete-btn" data-id="${item.id}">×</button>
       `;
@@ -49,10 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return;
 
         const items = StorageService.get('shopping_list', []);
+        const currentUser = localStorage.getItem('user_profile') || 'Alguien';
+
         items.push({
             name: text,
             completed: false,
-            id: Date.now().toString()
+            id: Date.now().toString(),
+            createdBy: currentUser
         });
         StorageService.set('shopping_list', items);
         StorageService.triggerAutoSync(); // MANUAL SYNC

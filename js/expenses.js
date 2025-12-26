@@ -97,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 title,
                 amount,
                 category,
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                createdBy: localStorage.getItem('user_profile') || ''
             };
 
             const expenses = StorageService.getExpenses();
@@ -167,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 0.8rem; color: var(--text-muted);">
                     <span style="background: #F3F4F6; padding: 2px 6px; border-radius: 4px; border: 1px solid #E5E7EB;">${categoryName}</span>
                     • ${dateStr}
+                    ${expense.createdBy ? `• <small>${expense.createdBy}</small>` : ''}
                 </div>
                 </div>
                 <div class="amount" style="margin-right: 1rem; font-weight: 600; font-size: 1.1rem;">

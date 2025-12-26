@@ -42,26 +42,30 @@
         </div>
 
         <div class="card">
-            <h3 style="margin-bottom: 1rem;">Configuración GitHub</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
-                Para sincronizar entre dispositivos, necesitas un <strong>Personal Access Token</strong> de GitHub (con
-                permiso de 'gist') y el ID de un Gist secreto.
-            </p>
+            <details>
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-muted); padding: 0.5rem 0;">⚠️ Configuración Avanzada (GitHub)</summary>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        Para sincronizar entre dispositivos, necesitas un <strong>Personal Access Token</strong> de GitHub (con
+                        permiso de 'gist') y el ID de un Gist secreto.
+                    </p>
 
-            <div class="form-group">
-                <label class="form-label">GitHub Access Token</label>
-                <input type="password" id="gh-token" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
-            </div>
+                    <div class="form-group">
+                        <label class="form-label">GitHub Access Token</label>
+                        <input type="password" id="gh-token" class="form-input" placeholder="ghp_xxxxxxxxxxxx">
+                    </div>
 
-            <div class="form-group">
-                <label class="form-label">Gist ID (Archivo de Datos)</label>
-                <input type="text" id="gh-gist-id" class="form-input" placeholder="Ej: a1b2c3d4e5...">
-                <small style="color: var(--text-muted);">Si lo dejas vacío, crearemos uno nuevo al guardar.</small>
-            </div>
+                    <div class="form-group">
+                        <label class="form-label">Gist ID (Archivo de Datos)</label>
+                        <input type="text" id="gh-gist-id" class="form-input" placeholder="Ej: a1b2c3d4e5...">
+                        <small style="color: var(--text-muted);">Si lo dejas vacío, crearemos uno nuevo al guardar.</small>
+                    </div>
 
-            <button id="save-config-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 2rem;">
-                💾 Guardar Configuración
-            </button>
+                    <button id="save-config-btn" class="btn btn-primary" style="width: 100%; margin-bottom: 2rem;">
+                        💾 Guardar Configuración
+                    </button>
+                </div>
+            </details>
 
             <hr style="border: 0; border-top: 1px solid #E5E7EB; margin-bottom: 2rem;">
 

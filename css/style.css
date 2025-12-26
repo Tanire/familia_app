@@ -287,7 +287,6 @@ h3 {
 
 .day {
   background: var(--bg-card);
-  min-height: 140px;
   /* Taller cells */
   padding: 0.5rem;
   position: relative;
@@ -295,9 +294,15 @@ h3 {
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent dragging the grid */
 }
 
 .day:hover {
+  background: #F9FAFB;
+  overflow-y: auto; /* Scroll on hover if needed */
+}
+
+.day-number {
   background: #F9FAFB;
 }
 

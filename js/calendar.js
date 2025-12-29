@@ -1,9 +1,4 @@
-window.onerror = function (msg, url, line, col, error) {
-  // Temporary debugging for mobile
-  // alert("Error: " + msg + "\nLine: " + line); 
-  // Commented out to be less intrusive, but ready if needed.
-  console.error(msg, url, line);
-};
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const calendarGrid = document.getElementById('calendar-grid');

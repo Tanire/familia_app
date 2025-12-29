@@ -160,6 +160,62 @@ document.addEventListener('DOMContentLoaded', () => {
         recurringOptions.classList.add('hidden');
     }
 
+    // --- OCR Logic ---
+    const scanBtn = document.getElementById('scan-btn');
+    const cameraInput = document.getElementById('camera-input');
+    const scanStatus = document.getElementById('scan-status');
+    const scanProgress = document.getElementById('scan-progress');
+
+    scanBtn.addEventListener('click', () => {
+        cameraInput.click();
+    });
+
+    cameraInput.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+
+            scanStatus.classList.remove('hidden');
+            scanBtn.disabled = true;
+            scanBtn.textContent = "⏳ Analizando...";
+
+            try {
+                const text = await OCRService.scanImage(file, (m) => {
+                    if (m.status === 'recognizing text') {
+                        scanProgress.textContent = Math.round(m.progress * 100) + '%';
+                    } else {
+                        scanProgress.textContent = m.status;
+                    }
+                });
+
+                if (text) {
+                    console.log("OCR Result:", text);
+                    const result = OCRService.parseReceiptText(text);
+
+                    if (result.total) {
+                        amountInput.value = result.total.toFixed(2);
+                        alert(`¡Detectado! Importe: ${result.total}€\n(Revisa si es correcto)`);
+
+                        // Try to suggest a title? Not easy without AI.
+                        // titleInput.value = "Ticket Escaneado";
+                    } else {
+                        alert("No he encontrado el precio total claro. Por favor, escríbelo tú.");
+                    }
+
+                    // Put raw text in title as hint? No, messy.
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Error al escanear.");
+            } finally {
+                scanStatus.classList.add('hidden');
+                scanBtn.disabled = false;
+                scanBtn.textContent = "📸 Escanear Ticket (Beta)";
+                cameraInput.value = ''; // Reset
+            }
+        }
+    });
+
     // --- Renders ---
 
     function renderExpenses() {

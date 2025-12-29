@@ -53,6 +53,16 @@
         <div class="card add-expense-form">
             <h3>Añadir Movimiento</h3>
 
+            <button id="scan-btn" class="btn btn-secondary"
+                style="width: 100%; margin-bottom: 1rem; border: 1px dashed var(--primary); color: var(--primary);">
+                📸 Escanear Ticket (Beta)
+            </button>
+            <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
+            <div id="scan-status" class="hidden"
+                style="text-align: center; font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-muted);">
+                Procesando imagen... <span id="scan-progress">0%</span>
+            </div>
+
             <div class="form-group">
                 <select id="expense-type" class="form-input" style="font-weight: 600;">
                     <option value="expense">📉 Gasto</option>
@@ -135,9 +145,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <script src="js/storage.js"></script>
     <script src="js/sync-service.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/ocr-service.js"></script>
     <script src="js/expenses.js"></script>
     <script src="js/main.js"></script>
 </body>

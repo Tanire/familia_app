@@ -292,62 +292,87 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openModal(prefillDate = null) {
+    if (!eventModal) return;
     eventModal.classList.remove('hidden');
 
     // Reset fields
-    eventTitle.value = '';
-    eventTime.value = '';
-    eventNote.value = '';
-    eventColor.value = '#4F46E5';
-    eventRecurrence.value = 'none';
+    if (eventTitle) eventTitle.value = '';
+    if (eventTime) eventTime.value = '';
+    if (eventNote) eventNote.value = '';
+    if (eventColor) eventColor.value = '#4F46E5';
+    if (eventRecurrence) eventRecurrence.value = 'none';
 
-    if (prefillDate) {
+    if (prefillDate && eventDate) {
       eventDate.value = prefillDate;
-    } else {
-      eventDate.value = new Date().toISOString().split('T')[0];
+    } else if (eventDate) {
+      // Use local date for default
+      const now = new Date();
+      const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      eventDate.value = localISO;
     }
   }
 
   function closeModal() {
-    eventModal.classList.add('hidden');
+    if (eventModal) eventModal.classList.add('hidden');
   }
 
   function saveEvent() {
-    const title = eventTitle.value.trim();
-    const date = eventDate.value;
-    const time = eventTime.value;
-    const color = eventColor.value;
-    const note = eventNote.value.trim();
-    const recurrence = eventRecurrence.value;
-
-    if (!title || !date) {
-      alert('Por favor, rellena título y fecha.');
+    // Robust checks
+    if (!eventTitle || !eventDate) {
+      console.error("Missing input elements");
       return;
     }
 
-    const newEvent = {
-      id: Date.now().toString(),
-      title,
-      date,
-      time,
-      color,
-      note,
-      recurrence, // 'none', 'weekly', 'monthly', 'yearly'
-      createdBy: localStorage.getItem('user_profile') || ''
-    };
+    const title = eventTitle.value.trim();
+    const date = eventDate.value;
+    const time = eventTime ? eventTime.value : '';
+    const color = eventColor ? eventColor.value : '#4F46E5';
+    const note = eventNote ? eventNote.value.trim() : '';
+    const recurrence = eventRecurrence ? eventRecurrence.value : 'none';
 
-    const events = StorageService.getEvents();
-    events.push(newEvent);
-    StorageService.saveEvents(events);
-    StorageService.triggerAutoSync(); // MANUAL SYNC
+    if (!title) {
+      alert('Por favor, escribe un título para el evento.');
+      return;
+    }
+    if (!date) {
+      alert('Por favor, selecciona una fecha.');
+      return;
+    }
 
-    closeModal();
-    renderCalendar();
+    try {
+      const newEvent = {
+        id: Date.now().toString(),
+        title,
+        date,
+        time,
+        color,
+        note,
+        recurrence,
+        createdBy: localStorage.getItem('user_profile') || 'Anónimo',
+        _deleted: false
+      };
 
-    selectedDate = date;
-    setTimeout(() => {
-      showDayDetails(date);
-    }, 50);
+      const events = StorageService.getEvents();
+      events.push(newEvent);
+      StorageService.saveEvents(events);
+
+      // Manual Sync trigger
+      if (typeof StorageService.triggerAutoSync === 'function') {
+        StorageService.triggerAutoSync();
+      }
+
+      closeModal();
+      renderCalendar();
+
+      selectedDate = date;
+      setTimeout(() => {
+        showDayDetails(date);
+      }, 50);
+
+    } catch (err) {
+      console.error("Error saving event:", err);
+      alert("Hubo un error al guardar el evento. Inténtalo de nuevo.");
+    }
   }
 
   document.getElementById('prev-month').addEventListener('click', () => {

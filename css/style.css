@@ -38,56 +38,7 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Dark Mode Overrides */
-body.dark-mode {
-  --bg-body: #111827;
-  /* Gray 900 */
-  --bg-card: #1F2937;
-  /* Gray 800 */
-  --bg-glass: rgba(31, 41, 55, 0.85);
-  --text-main: #F9FAFB;
-  /* Gray 50 */
-  --text-muted: #9CA3AF;
-  /* Gray 400 */
-  --text-light: #F3F4F6;
-
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-mode .app-title {
-  /* Brighter gradient for dark mode */
-  background: linear-gradient(to right, #818CF8, #34D399);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-body.dark-mode .calendar-grid {
-  background: #374151;
-  /* Dark border lines */
-  border-color: #374151;
-}
-
-body.dark-mode .day:hover {
-  background: #374151;
-}
-
-body.dark-mode .day.today {
-  background: rgba(79, 70, 229, 0.2);
-}
-
-body.dark-mode .detail-item,
-body.dark-mode .form-input,
-body.dark-mode .form-select {
-  background: #374151;
-  /* Gray 700 */
-  color: white;
-  border-color: #4B5563;
-}
-
-body.dark-mode .expense-item:hover {
-  background: #374151;
-}
+/* Dark mode removed by user request */
 
 
 /* --- Reset & Base --- */
@@ -687,11 +638,7 @@ h3 {
   transition: opacity 0.3s;
 }
 
-body.dark-mode .sync-indicator {
-  background: #1F2937;
-  border-color: #374151;
-  color: #F3F4F6;
-}
+
 
 /* --- Mobile Responsive Calendar --- */
 @media (max-width: 600px) {

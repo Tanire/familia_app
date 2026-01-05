@@ -42,24 +42,10 @@ function navigateTo(page) {
   window.location.href = page;
 }
 
-function checkTheme() {
-  const now = new Date();
-  const hour = now.getHours();
-  // Dark mode from 20:00 (8 PM) to 09:00 (9 AM)
-  if (hour >= 20 || hour < 9) {
-    document.body.classList.add('dark-mode');
-    // Update theme-color meta tag for browser UI
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#111827');
-  } else {
-    document.body.classList.remove('dark-mode');
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#4F46E5');
-  }
-}
+
 
 document.addEventListener('DOMContentLoaded', () => {
-  checkTheme(); // Run on load
-  // Optional: Check every minute to switch automatically while open
-  setInterval(checkTheme, 60000);
+
 
   // Check for Daily Bills
   if (typeof NotificationSystem !== 'undefined' && typeof StorageService !== 'undefined') {

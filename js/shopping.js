@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idx !== -1) {
             items[idx].completed = !items[idx].completed;
             StorageService.set('shopping_list', items);
+            StorageService.triggerAutoSync(); // TRIGGER SYNC
             renderList();
         }
     }
@@ -84,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idx !== -1) {
             items[idx]._deleted = true;
             StorageService.set('shopping_list', items);
+            StorageService.triggerAutoSync(); // TRIGGER SYNC
             renderList();
         }
     }
@@ -95,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (i.completed) i._deleted = true;
             });
             StorageService.set('shopping_list', items);
+            StorageService.triggerAutoSync(); // TRIGGER SYNC
             renderList();
         }
     });

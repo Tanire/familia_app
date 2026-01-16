@@ -101,7 +101,7 @@ const SyncService = {
     // ---- Smart Merge Logic (with Soft Delete Support) ----
 
     mergeArrays(localArr, cloudArr) {
-        // Map by ID to merge. Local wins if conflict (assumed latest edit by active user).
+        // Map by ID to merge. "Last Write Wins" Strategy.
         const mergedMap = new Map();
 
         // 1. Add Cloud items first
@@ -111,17 +111,30 @@ const SyncService = {
             });
         }
 
-        // 2. Add/Overwrite with Local items
+        // 2. Add/Merge Local items
         if (Array.isArray(localArr)) {
-            localArr.forEach(item => {
-                if (item && item.id) {
-                    const existing = mergedMap.get(item.id);
-                    // Conflict Resolution Strategy:
-                    // If cloud says 'deleted' and local says 'not deleted' -> It depends.
-                    // If local has NEW timestamp, keep local. If not, maybe use cloud?
-                    // SIMPLE STRATEGY: Local always wins.
-                    // Meaning if I deleted locally, my local item has _deleted=true, so it overrides cloud.
-                    mergedMap.set(item.id, item);
+            localArr.forEach(localItem => {
+                if (localItem && localItem.id) {
+                    const cloudItem = mergedMap.get(localItem.id);
+
+                    if (cloudItem) {
+                        // Conflict: Both exist. Compare timestamps.
+                        // If local has no timestamp, assume it's a new change (or legacy). 
+                        // If cloud has no timestamp, assume local is newer.
+
+                        const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
+                        const cloudTime = cloudItem.updatedAt ? new Date(cloudItem.updatedAt).getTime() : 0;
+
+                        if (localTime >= cloudTime) {
+                            mergedMap.set(localItem.id, localItem);
+                        } else {
+                            // Cloud is newer (Keep Cloud Item logic - already in map)
+                            // But wait, if we do nothing, cloud item stays.
+                        }
+                    } else {
+                        // Only in local
+                        mergedMap.set(localItem.id, localItem);
+                    }
                 }
             });
         }

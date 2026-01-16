@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
             name: text,
             completed: false,
             id: Date.now().toString(),
-            createdBy: currentUser
+            createdBy: currentUser,
+            updatedAt: new Date().toISOString()
         });
         StorageService.set('shopping_list', items);
         StorageService.triggerAutoSync(); // MANUAL SYNC
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const idx = items.findIndex(i => i.id === id);
         if (idx !== -1) {
             items[idx].completed = !items[idx].completed;
+            items[idx].updatedAt = new Date().toISOString();
             StorageService.set('shopping_list', items);
             StorageService.triggerAutoSync(); // TRIGGER SYNC
             renderList();
@@ -84,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const idx = items.findIndex(i => i.id === id);
         if (idx !== -1) {
             items[idx]._deleted = true;
+            items[idx].updatedAt = new Date().toISOString();
             StorageService.set('shopping_list', items);
             StorageService.triggerAutoSync(); // TRIGGER SYNC
             renderList();
@@ -94,7 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('¿Borrar todos los elementos marcados?')) {
             let items = StorageService.get('shopping_list', []);
             items.forEach(i => {
-                if (i.completed) i._deleted = true;
+                if (i.completed) {
+                    i._deleted = true;
+                    i.updatedAt = new Date().toISOString();
+                }
             });
             StorageService.set('shopping_list', items);
             StorageService.triggerAutoSync(); // TRIGGER SYNC

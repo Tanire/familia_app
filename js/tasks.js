@@ -228,39 +228,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Render Lists
-    const tasks = StorageService.getTasks().filter(t => !t._deleted);
-    tasks.sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
+    function renderPending() {
+        const tasks = StorageService.getTasks().filter(t => !t._deleted);
+        tasks.sort((a, b) => new Date(a.nextDue) - new Date(b.nextDue));
 
-    pendingList.innerHTML = '';
+        pendingList.innerHTML = '';
 
-    if (tasks.length === 0) {
-        emptyPending.classList.remove('hidden');
-        return;
-    } else {
-        emptyPending.classList.add('hidden');
-    }
+        if (tasks.length === 0) {
+            emptyPending.classList.remove('hidden');
+            return;
+        } else {
+            emptyPending.classList.add('hidden');
+        }
 
-    tasks.forEach(task => {
-        // Only show relevant tasks in "Pending" view? 
-        // Maybe show tasks due in the next 3 days + overdue.
-        const status = getStatus(task);
-        const due = new Date(task.nextDue);
-        const diffDays = (due - new Date()) / (1000 * 60 * 60 * 24);
+        tasks.forEach(task => {
+            // Only show relevant tasks in "Pending" view? 
+            // Maybe show tasks due in the next 3 days + overdue.
+            const status = getStatus(task);
+            const due = new Date(task.nextDue);
+            const diffDays = (due - new Date()) / (1000 * 60 * 60 * 24);
 
-        if (diffDays > 3) return; // Skip far future tasks in pending view? Or show all? User said "Pendientes y Todas". 
+            if (diffDays > 3) return; // Skip far future tasks in pending view? Or show all? User said "Pendientes y Todas". 
 
-        const div = document.createElement('div');
-        div.className = 'task-card ' + status;
+            const div = document.createElement('div');
+            div.className = 'task-card ' + status;
 
-        let statusText = '';
-        let statusColor = '';
-        if (status === 'overdue') { statusText = '¡Vencida!'; statusColor = 'var(--danger)'; }
-        else if (status === 'due-soon') { statusText = 'Para hoy'; statusColor = '#F59E0B'; }
-        else { statusText = 'Pronto'; statusColor = 'var(--success)'; } // success var not def, use inline
+            let statusText = '';
+            let statusColor = '';
+            if (status === 'overdue') { statusText = '¡Vencida!'; statusColor = 'var(--danger)'; }
+            else if (status === 'due-soon') { statusText = 'Para hoy'; statusColor = '#F59E0B'; }
+            else { statusText = 'Pronto'; statusColor = 'var(--success)'; } // success var not def, use inline
 
-        const dateStr = due.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+            const dateStr = due.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
 
-        div.innerHTML = `
+            div.innerHTML = `
                 <div style="flex-grow:1;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <h3 class="task-title">${task.title}</h3>
@@ -271,19 +272,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     ${task.assignedTo ? `<div class="task-meta">👤 ${task.assignedTo}</div>` : ''}
                 </div>
-                </div>
                 <button onclick="window.completeTask('${task.id}')" class="btn btn-primary" style="margin-left:0.5rem; border-radius:8px; padding: 0.5rem 1rem; font-weight:600; font-size: 0.9rem; box-shadow: var(--shadow-sm);">
                     ✔️ Completar
                 </button>
             `;
-        pendingList.appendChild(div);
-    });
+            pendingList.appendChild(div);
+        });
 
-    if (pendingList.children.length === 0) {
-        emptyPending.innerHTML = "Todo limpio por hoy ✅ (Próximas tareas en muchos días)";
-        emptyPending.classList.remove('hidden');
+        if (pendingList.children.length === 0) {
+            emptyPending.innerHTML = "Todo limpio por hoy ✅ (Próximas tareas en muchos días)";
+            emptyPending.classList.remove('hidden');
+        }
     }
-}
 
     function renderAll() {
         const tasks = StorageService.getTasks().filter(t => !t._deleted);
@@ -326,8 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init Logic
     renderPending();
 
-window.addEventListener('storage-updated', () => {
-    if (!allView.classList.contains('hidden')) renderAll();
-    renderPending();
-});
+    window.addEventListener('storage-updated', () => {
+        if (!allView.classList.contains('hidden')) renderAll();
+        renderPending();
+    });
 });

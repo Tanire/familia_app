@@ -169,20 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
       });
 
-      const importFile = document.getElementById('import-file'); // Assuming this element exists on the page
-      importFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const data = JSON.parse(ev.target.result);
-                SyncService.restoreData(data);
-                alert('Copia de seguridad restaurada');
-            } catch (err) { alert('Archivo JSON inválido'); }
-        };
-        reader.readAsText(file);
-    });
 
     // --- Phase 2: Expenses Config Logic ---
     const budgetInput = document.getElementById('monthly-budget');

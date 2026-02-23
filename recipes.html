@@ -114,12 +114,15 @@
 
         <!-- RECIPES VIEW -->
         <div id="recipes-view">
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
-                <div style="flex: 1; min-width: 200px;">
-                    <input type="text" id="recipe-search-input" class="form-input" placeholder="🔍 ¿Qué tienes en la nevera? (ej: pollo, arroz)...">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+                <div style="flex: 1; min-width: 150px;">
+                    <input type="text" id="recipe-search-input" class="form-input" placeholder="🔍 ¿Qué tienes en la nevera? (ej: pollo) ...">
                 </div>
-                <button id="btn-add-recipe" class="btn btn-secondary" style="white-space: nowrap;">
-                    + Nueva Receta
+                <button id="btn-search-web" class="btn btn-secondary" style="white-space: nowrap; padding: 0.5rem 0.75rem;" title="Buscar recetas en Google con estos ingredientes">
+                    🌐 Web
+                </button>
+                <button id="btn-add-recipe" class="btn btn-primary" style="white-space: nowrap; padding: 0.5rem 0.75rem;">
+                    + Nueva
                 </button>
             </div>
 

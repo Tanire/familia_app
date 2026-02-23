@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Recipes Elements
     const recipesList = document.getElementById('recipes-list');
     const searchInput = document.getElementById('recipe-search-input');
+    const btnSearchWeb = document.getElementById('btn-search-web');
     const btnAddRecipe = document.getElementById('btn-add-recipe');
     const recipeModal = document.getElementById('recipe-modal');
     const btnCancelRecipe = document.getElementById('cancel-recipe-btn');
@@ -202,6 +203,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             renderRecipes();
+        });
+    }
+
+    if (btnSearchWeb) {
+        btnSearchWeb.addEventListener('click', () => {
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+            if (!searchTerm) {
+                alert('Primero escribe algún ingrediente en el buscador para buscar recetas online.');
+                return;
+            }
+            const query = encodeURIComponent(`recetas con ${searchTerm}`);
+            window.open(`https://www.google.com/search?q=${query}`, '_blank');
         });
     }
 

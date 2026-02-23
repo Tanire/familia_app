@@ -102,7 +102,7 @@ function loadDashboardStats() {
     }).length;
 
     // Tasks Pending
-    const pendingTasksCount = StorageService.getHouseholdTasks().filter(t => !t.completed && !t._deleted).length;
+    const pendingTasksCount = StorageService.getTasks().filter(t => !t.completed && !t._deleted).length;
 
     // Shopping List items
     const shopListCount = StorageService.getShoppingList().filter(i => !i.checked && !i._deleted).length;
@@ -287,4 +287,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load Dashboard Stats if on index
   setTimeout(loadDashboardStats, 100);
+  window.addEventListener('storage-updated', loadDashboardStats);
 });

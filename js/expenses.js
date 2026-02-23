@@ -96,12 +96,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Logic ---
 
+    const dateInput = document.getElementById('expense-date');
+
+    // On load, set date input to today
+    if (dateInput) {
+         const now = new Date();
+         const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+         dateInput.value = localISO;
+    }
+
     function addExpense() {
         const title = titleInput.value.trim();
         const amount = parseFloat(amountInput.value);
         const category = categoryInput.value;
         const isRecurring = isRecurringCheck.checked;
         const type = typeInput ? typeInput.value : 'expense';
+        let movementDate = new Date().toISOString(); // Fallback
+
+        if (dateInput && dateInput.value) {
+            // Need to create a Date object that represents the SELECTED day, but maybe keep current time
+            // to avoid all items overlapping at 00:00:00 if sorted by exact time.
+            const d = new Date(dateInput.value);
+            const now = new Date();
+            d.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+            movementDate = d.toISOString();
+        }
 
         if (!title || isNaN(amount)) {
             alert('Por favor, introduce concepto y cantidad.');
@@ -109,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (isRecurring && type === 'expense') {
-            // Recurring Bill (Only Expenses supported for now as Recurring in this logic, but easy to expand)
+            // Recurring Bill
             const day = parseInt(recurringDayInput.value);
             if (!day || day < 1 || day > 31) {
                 alert('Por favor, introduce un día válido (1-31).');
@@ -137,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 amount,
                 category,
                 type: type, // 'income' or 'expense'
-                date: new Date().toISOString(),
+                date: movementDate,
                 createdBy: localStorage.getItem('user_profile') || '',
                 items: currentScannedItems || [] // Store scanned items
             };
@@ -150,8 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
             StorageService.saveExpenses(expenses);
             StorageService.triggerAutoSync(); // MANUAL SYNC
 
-            // Reset Date View to NOW to see the new item
-            currentDate = new Date();
+            // Reset Date View to the month of the ADDED item to see it clearly
+            if (dateInput && dateInput.value) {
+                currentDate = new Date(dateInput.value);
+            } else {
+                currentDate = new Date();
+            }
 
             if (expensesList.classList.contains('hidden')) {
                 viewExpensesBtn.click();
@@ -165,6 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
         amountInput.value = '';
         isRecurringCheck.checked = false;
         recurringOptions.classList.add('hidden');
+        if (dateInput) {
+             const now = new Date();
+             const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+             dateInput.value = localISO;
+        }
     }
 
     // --- OCR Logic ---

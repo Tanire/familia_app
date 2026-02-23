@@ -85,7 +85,13 @@ const SyncService = {
             expenses: StorageService.getExpenses(),
             shopping_list: StorageService.get('shopping_list', []),
             recurring_bills: StorageService.getRecurringBills(),
-            household_tasks: StorageService.getTasks()
+            household_tasks: StorageService.getTasks(),
+            // Phase 2
+            expense_categories: StorageService.getCustomCategories(),
+            monthly_budget: { amount: StorageService.getMonthlyBudget(), updatedAt: localStorage.getItem('budget_updatedAt') || new Date().toISOString() },
+            // Phase 3
+            recipes: StorageService.get('recipes', []),
+            weekly_menu: StorageService.get('weekly_menu', [null, null, null, null, null, null, null])
         };
     },
     restoreData(data) {
@@ -94,6 +100,16 @@ const SyncService = {
         if (data.shopping_list) StorageService.set('shopping_list', data.shopping_list, true);
         if (data.recurring_bills) StorageService.saveRecurringBills(data.recurring_bills, true);
         if (data.household_tasks) StorageService.saveTasks(data.household_tasks, true);
+        
+        if (data.expense_categories) StorageService.saveCustomCategories(data.expense_categories, true);
+        if (data.monthly_budget && data.monthly_budget.amount !== undefined) {
+             StorageService.saveMonthlyBudget(data.monthly_budget.amount, true);
+             localStorage.setItem('budget_updatedAt', data.monthly_budget.updatedAt);
+        }
+
+        // Phase 3
+        if (data.recipes) StorageService.set('recipes', data.recipes, true);
+        if (data.weekly_menu) StorageService.set('weekly_menu', data.weekly_menu, true);
     },
     mergeArrays(localArr, cloudArr) {
         // Map by ID to merge. "Last Write Wins" Strategy.
@@ -147,12 +163,27 @@ const SyncService = {
             const localData = this.getAllLocalData();
 
             // 3. Merge
+            const localBudget = localData.monthly_budget;
+            const cloudBudget = cloudData.monthly_budget || { amount: 0, updatedAt: '1970-01-01' };
+            const mergedBudget = (new Date(localBudget.updatedAt).getTime() > new Date(cloudBudget.updatedAt).getTime()) ? localBudget : cloudBudget;
+
+            // Simple categories merge (assume local wins if it has changes, but mergeArrays with IDs is better if we add IDs/timestamps to categories)
+            // For categories, we will use mergeArrays and ensure categories have 'id' and 'updatedAt'.
+            const mergedCategories = this.mergeArrays(localData.expense_categories, cloudData.expense_categories || []);
+
             const mergedData = {
                 calendar_events: this.mergeArrays(localData.calendar_events, cloudData.calendar_events),
                 expenses: this.mergeArrays(localData.expenses, cloudData.expenses),
                 shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list),
                 recurring_bills: this.mergeArrays(localData.recurring_bills, cloudData.recurring_bills),
-                household_tasks: this.mergeArrays(localData.household_tasks, cloudData.household_tasks)
+                household_tasks: this.mergeArrays(localData.household_tasks, cloudData.household_tasks),
+                expense_categories: mergedCategories.length > 0 ? mergedCategories : localData.expense_categories,
+                monthly_budget: mergedBudget,
+                // Phase 3 Arrays
+                recipes: this.mergeArrays(localData.recipes, cloudData.recipes),
+                // Menu is a simple array of IDs, prefer local if it exists and changed, but it doesn't have updatedAt. 
+                // For simplicity, local wins just like categories.
+                weekly_menu: (!cloudData.weekly_menu || localData.weekly_menu.some(x => x !== null)) ? localData.weekly_menu : cloudData.weekly_menu
             };
 
             // 4. Update Local

@@ -42,9 +42,19 @@
                         <span id="total-expense">0.00 €</span>
                     </div>
                 </div>
-                <div class="balance-total">
+                <div class="balance-total" style="flex: 1; border-left: 1px solid #E5E7EB; padding-left: 1rem;">
                     <small>Balance</small>
                     <span id="total-balance">0.00 €</span>
+                </div>
+            </div>
+            
+            <div id="budget-container" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); display: none; margin-bottom: 1rem; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                    <strong style="color: var(--text-muted);">Presupuesto Mensual</strong>
+                    <span id="budget-text" style="font-weight: 600;">0 / 1000 €</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden;">
+                    <div id="budget-bar" style="height: 100%; width: 0%; background: var(--secondary); transition: width 0.3s, background-color 0.3s;"></div>
                 </div>
             </div>
         </header>

@@ -35,6 +35,16 @@
                     ⟳ Recargar
                 </button>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-weight: 600;">Modo Oscuro</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Apariencia visual</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
         </div>
 
         <!-- 2. Data State -->
@@ -55,7 +65,37 @@
                 style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.2em;"></div>
         </div>
 
-        <!-- 3. Advanced Config -->
+        </div>
+
+        <!-- 3. Expenses Config -->
+        <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--accent);">
+            <h3 style="margin-bottom: 0.5rem;">💶 Configuración de Gastos</h3>
+            
+            <div class="form-group">
+                <label class="form-label">Presupuesto Mensual Global (€)</label>
+                <input type="number" id="monthly-budget" class="form-input" placeholder="Ej: 1500" step="10">
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Si lo dejas a 0, no se mostrará la barra de límite mensual.</p>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <label class="form-label">Categorías de Gastos</label>
+                <div id="categories-list" style="background: var(--bg-body); border-radius: var(--radius-md); padding: 0.5rem; margin-bottom: 1rem; max-height: 200px; overflow-y: auto;">
+                    <!-- Dynamically populated -->
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="new-cat-icon" class="form-input" placeholder="Emoji" style="width: 60px; text-align: center;">
+                    <input type="text" id="new-cat-name" class="form-input" placeholder="Nueva Categoría" style="flex: 1;">
+                    <button id="add-cat-btn" class="btn btn-primary" style="padding: 0 1rem;">+</button>
+                </div>
+            </div>
+            
+            <button id="save-expenses-config-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1.5rem;">
+                💾 Guardar Presupuesto y Categorías
+            </button>
+        </div>
+
+        <!-- 4. Advanced Config -->
         <div class="card">
             <details>
                 <summary style="cursor: pointer; font-weight: 600; color: var(--text-muted); padding: 0.5rem 0;">⚙️

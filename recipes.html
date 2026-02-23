@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recetas y Menú - Casa Mocholí Chordà</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .view-toggle {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .recipe-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            border: 1px solid var(--btn-secondary-border, #E5E7EB);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .recipe-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--btn-secondary-border, #E5E7EB);
+        }
+
+        .recipe-icon {
+            font-size: 2rem;
+        }
+
+        .recipe-info h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .recipe-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .recipe-actions {
+            padding: 0.75rem 1rem;
+            background: var(--bg-body);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Menu Grid */
+        .menu-week {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .menu-day-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            box-shadow: var(--shadow-sm);
+            border-top: 4px solid var(--primary);
+        }
+        
+        .menu-day-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+
+        <div class="back-button">
+            <button onclick="window.location.href='index.html'" class="btn btn-secondary">
+                ← Volver al Inicio
+            </button>
+        </div>
+
+        <header class="home-header" style="margin-bottom: 2rem;">
+            <h2>Recetas y Menú</h2>
+            <p style="color: var(--text-muted);">Organiza las comidas de la semana</p>
+        </header>
+
+        <div class="view-toggle">
+            <button id="view-recipes-btn" class="btn btn-primary">📖 Mis Recetas</button>
+            <button id="view-menu-btn" class="btn btn-secondary">📅 Menú Semanal</button>
+        </div>
+
+        <!-- RECIPES VIEW -->
+        <div id="recipes-view">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                <button id="btn-add-recipe" class="btn btn-secondary">
+                    + Nueva Receta
+                </button>
+            </div>
+
+            <div id="recipes-list" class="recipe-grid">
+                <!-- Recipes will be injected here -->
+            </div>
+        </div>
+
+        <!-- MENU VIEW -->
+        <div id="menu-view" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="color: var(--text-main);">Planificación Semanal</h3>
+                <button id="btn-send-to-shopping" class="btn btn-secondary" style="border-color: var(--secondary); color: var(--secondary);">
+                    🛒 Mover Ingredientes a la Compra
+                </button>
+            </div>
+
+            <div id="menu-week-grid" class="menu-week">
+                <!-- Days injected here -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL RECIPE -->
+    <div id="recipe-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>Nueva Receta</h2>
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <div style="width: 80px;">
+                    <label class="form-label">Icono</label>
+                    <input type="text" id="recipe-icon" class="form-input" placeholder="🍲" style="text-align: center;">
+                </div>
+                <div style="flex: 1;">
+                    <label class="form-label">Nombre de la Receta</label>
+                    <input type="text" id="recipe-title" class="form-input" placeholder="Macarrones con tomate...">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Ingredientes (Uno por línea)</label>
+                <textarea id="recipe-ingredients" class="form-textarea" rows="4" placeholder="500g Macarrones&#10;1 Bote tomate frito&#10;Queso rallado..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Pasos / Notas (Opcional)</label>
+                <textarea id="recipe-steps" class="form-textarea" rows="3" placeholder="Hervir la pasta 10 min..."></textarea>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="cancel-recipe-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="save-recipe-btn" class="btn btn-primary">Guardar Receta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SELECT RECIPE FOR DAY -->
+    <div id="select-recipe-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="select-day-title">Elegir para Lunes</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Comida principal</label>
+                <select id="select-recipe-dropdown" class="form-select">
+                    <option value="">-- Ninguna --</option>
+                    <!-- Options injected -->
+                </select>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="cancel-select-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="save-select-btn" class="btn btn-primary">Asignar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/sync-service.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/recipes.js"></script>
+</body>
+</html>

@@ -33,15 +33,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // Navigation State
     let currentDate = new Date();
 
-    // Constants
-    const CATEGORY_ICONS = {
-        'supermarket': '🛒', 'home': '🏠', 'transport': '🚗',
-        'leisure': '🎉', 'health': '💊', 'clothing': '👕', 'other': '📦', 'salary': '💰', 'gift': '🎁'
-    };
-    const CATEGORY_NAMES = {
-        'supermarket': 'Supermercado', 'home': 'Casa', 'transport': 'Transporte',
-        'leisure': 'Ocio', 'health': 'Salud', 'clothing': 'Ropa', 'other': 'Otros', 'salary': 'Nómina', 'gift': 'Regalo'
-    };
+    // --- Dynamic Categories ---
+    let customCategories = StorageService.getCustomCategories();
+    
+    // Populate Select HTML
+    if (categoryInput) {
+        categoryInput.innerHTML = '';
+        customCategories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.icon} ${c.name}`;
+            categoryInput.appendChild(opt);
+        });
+        // Default 'other' if not in list
+        if (!customCategories.find(c => c.id === 'other')) {
+             const opt = document.createElement('option');
+             opt.value = 'other';
+             opt.textContent = '📦 Otros';
+             categoryInput.appendChild(opt);
+        }
+    }
+
+    function getCategoryInfo(id, fallbackName = 'Otros', fallbackIcon = '📦') {
+        const cat = customCategories.find(c => c.id === id);
+        return cat ? { name: cat.name, icon: cat.icon } : { name: fallbackName, icon: fallbackIcon };
+    }
 
     // --- UI Toggles ---
 
@@ -302,16 +318,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dateOpts = { day: 'numeric', month: 'short' };
             const dateStr = new Date(mov.date).toLocaleDateString('es-ES', dateOpts);
-            const categoryIcon = CATEGORY_ICONS[mov.category] || (isIncome ? '💰' : '📦');
-            const categoryName = CATEGORY_NAMES[mov.category] || (isIncome ? 'Ingreso' : 'Otros');
+            const catInfo = getCategoryInfo(mov.category, isIncome ? 'Ingreso' : 'Otros', isIncome ? '💰' : '📦');
 
             item.innerHTML = `
                 <div style="display:flex; align-items:center;">
-                    <div style="font-size: 1.5rem; margin-right: 1rem;">${categoryIcon}</div>
+                    <div style="font-size: 1.5rem; margin-right: 1rem;">${catInfo.icon}</div>
                     <div style="flex-grow: 1;">
                     <div style="font-weight: 600;">${mov.title}</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted);">
-                        <span style="background: var(--bg-body); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--text-light);">${categoryName}</span>
+                        <span style="background: var(--bg-body); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--text-light); color: var(--text-main);">${catInfo.name}</span>
                         • ${dateStr}
                         ${mov.createdBy ? `• <small>${mov.createdBy}</small>` : ''}
                         ${mov.items && mov.items.length > 0 ? `• <small style="color:var(--primary);">📄 Ver Ticket (${mov.items.length})</small>` : ''}
@@ -325,22 +340,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${renderExpenseDetails(mov)}
             `;
 
-            // Toggle Details Click
-            if (mov.items && mov.items.length > 0) {
-                item.onclick = (e) => {
-                    // Don't trigger if clicked delete
-                    if (e.target.classList.contains('btn-delete')) return;
+            // Toggle Details Click (always active now for share button)
+            item.style.cursor = 'pointer';
+            item.onclick = (e) => {
+                // Don't trigger if clicked delete or a link
+                if (e.target.classList.contains('btn-delete') || e.target.closest('a')) return;
 
-                    const details = item.querySelector('.expense-details');
-                    if (details) {
-                        if (details.style.display === 'none') {
-                            details.style.display = 'block';
-                        } else {
-                            details.style.display = 'none';
-                        }
+                const details = item.querySelector('.expense-details');
+                if (details) {
+                    if (details.style.display === 'none') {
+                        details.style.display = 'flex';
+                    } else {
+                        details.style.display = 'none';
                     }
-                };
-            }
+                }
+            };
             expensesList.appendChild(item);
         });
 
@@ -352,6 +366,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (totalBalanceEl) {
             totalBalanceEl.textContent = `${balance.toFixed(2)} €`;
             totalBalanceEl.style.color = balance >= 0 ? 'var(--secondary)' : 'var(--danger)';
+        }
+
+        // --- Budget Progress Bar ---
+        const budgetContainer = document.getElementById('budget-container');
+        const budgetText = document.getElementById('budget-text');
+        const budgetBar = document.getElementById('budget-bar');
+        const monthlyBudget = StorageService.getMonthlyBudget();
+
+        if (budgetContainer && monthlyBudget > 0) {
+            budgetContainer.style.display = 'block';
+            let percentage = (expense / monthlyBudget) * 100;
+            if (percentage > 100) percentage = 100;
+            
+            budgetText.textContent = `${expense.toFixed(2)} / ${monthlyBudget.toFixed(2)} €`;
+            budgetBar.style.width = `${percentage}%`;
+            
+            if (percentage < 75) {
+                budgetBar.style.backgroundColor = 'var(--secondary)';
+            } else if (percentage < 90) {
+                budgetBar.style.backgroundColor = 'var(--accent)';
+            } else {
+                budgetBar.style.backgroundColor = 'var(--danger)';
+            }
+        } else if (budgetContainer) {
+            budgetContainer.style.display = 'none';
         }
 
         setupDeleteListeners();
@@ -374,10 +413,10 @@ document.addEventListener('DOMContentLoaded', () => {
             item.className = 'expense-item';
             item.style.borderLeft = '4px solid #F59E0B';
 
-            const categoryIcon = CATEGORY_ICONS[bill.category] || '📦';
+            const catInfo = getCategoryInfo(bill.category);
 
             item.innerHTML = `
-                <div style="font-size: 1.5rem; margin-right: 1rem;">${categoryIcon}</div>
+                <div style="font-size: 1.5rem; margin-right: 1rem;">${catInfo.icon}</div>
                 <div style="flex-grow: 1;">
                     <div style="font-weight: 600;">${bill.title}</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted);">
@@ -458,18 +497,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function renderExpenseDetails(mov) {
-        if (!mov.items || mov.items.length === 0) return '';
-
-        let html = `<div class="expense-details" style="display:none; margin-top: 0.75rem; border-top: 1px dashed #E5E7EB; padding-top: 0.5rem;">`;
-        html += `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight:600;">ARTÍCULOS DEL TICKET:</div>`;
-
-        mov.items.forEach(item => {
-            html += `
-            <div class="item-row" style="display:flex; justify-content:space-between; font-size: 0.85rem; margin-bottom: 2px;">
-                <span>${item.name}</span>
-                <span style="font-family:monospace;">${item.price.toFixed(2)}</span>
-            </div>`;
-        });
+        let html = `<div class="expense-details" style="display:none; margin-top: 0.75rem; border-top: 1px dashed #E5E7EB; padding-top: 0.5rem; flex-direction: column;">`;
+        
+        if (mov.items && mov.items.length > 0) {
+            html += `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight:600;">ARTÍCULOS DEL TICKET:</div>`;
+            mov.items.forEach(item => {
+                html += `
+                <div class="item-row" style="display:flex; justify-content:space-between; font-size: 0.85rem; margin-bottom: 2px;">
+                    <span>${item.name}</span>
+                    <span style="font-family:monospace;">${item.price.toFixed(2)}</span>
+                </div>`;
+            });
+        }
+        
+        // Share Button (always present in details)
+        const isIncome = mov.type === 'income';
+        const typeWord = isIncome ? 'Ingreso' : 'Gasto';
+        const val = parseFloat(mov.amount).toFixed(2);
+        const shareText = encodeURIComponent(`Hola, apunto un ${typeWord} de la casa:\n*Concepto:* ${mov.title}\n*Importe:* ${val}€`);
+        const whatsappLink = `https://wa.me/?text=${shareText}`;
+        
+        html += `
+            <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                 <a href="${whatsappLink}" target="_blank" class="btn btn-sm btn-secondary" style="border-color: #25D366; color: #25D366;">
+                    WhatsApp
+                 </a>
+            </div>
+        `;
 
         html += `</div>`;
         return html;

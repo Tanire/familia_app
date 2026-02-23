@@ -72,5 +72,29 @@ const StorageService = {
   saveRecurringBills(bills, suppress = false) { this.set('recurring_bills', bills, suppress); },
 
   getTasks() { return this.get('household_tasks', []); },
-  saveTasks(tasks, suppress = false) { this.set('household_tasks', tasks, suppress); }
+  saveTasks(tasks, suppress = false) { this.set('household_tasks', tasks, suppress); },
+
+  // Phase 2 Additions
+  getCustomCategories() { 
+    // Default categories if empty
+    const defaults = [
+        { id: 'supermarket', name: 'Supermercado', icon: '🛒' },
+        { id: 'home', name: 'Casa', icon: '🏠' },
+        { id: 'transport', name: 'Transporte', icon: '🚗' },
+        { id: 'leisure', name: 'Ocio', icon: '🎉' },
+        { id: 'health', name: 'Salud', icon: '💊' },
+        { id: 'clothing', name: 'Ropa', icon: '👕' },
+        { id: 'salary', name: 'Nómina', icon: '💰' },
+        { id: 'gift', name: 'Regalo', icon: '🎁' },
+        { id: 'other', name: 'Otros', icon: '📦' }
+    ];
+    return this.get('expense_categories', defaults); 
+  },
+  saveCustomCategories(cats, suppress = false) { this.set('expense_categories', cats, suppress); },
+
+  getMonthlyBudget() { return this.get('monthly_budget', 0); },
+  saveMonthlyBudget(budget, suppress = false) { this.set('monthly_budget', budget, suppress); },
+
+  // Phase 3 Additions
+  getShoppingList() { return this.get('shopping_list', []); },
 };

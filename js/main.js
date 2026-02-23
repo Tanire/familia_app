@@ -58,7 +58,68 @@ function navigateTo(page) {
   window.location.href = page;
 }
 
+function loadDashboardStats() {
+    // Only run on index.html
+    if (!document.getElementById('home-user-name')) return;
+
+    // 1. Set Date
+    const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateStr = new Date().toLocaleDateString('es-ES', dateOpts);
+    document.getElementById('date-display').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+    // 2. Set Name
+    const userName = localStorage.getItem('user_profile') || 'Familia';
+    document.getElementById('home-user-name').textContent = userName.split(' ')[0]; // First name only
+
+    // 3. Calculate Stats
+    // Events Today
+    const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const allEvents = StorageService.getEvents().filter(e => !e._deleted);
+    let todayEventsCount = 0;
+    
+    // Quick recurring check (Simplified for widget)
+    allEvents.forEach(event => {
+        if (!event.recurrence || event.recurrence === 'none') {
+            if (event.date === todayStr) todayEventsCount++;
+        } else {
+            // Very simplified check, real logic is in calendar.js
+            todayEventsCount++; // Just count it as potential for now to keep it lightweight, or copy full logic
+        }
+    });
+    
+    // Exact logic for recurring
+    const viewDate = new Date();
+    viewDate.setHours(0,0,0,0);
+    todayEventsCount = allEvents.filter(event => {
+        const eventStart = new Date(event.date);
+        eventStart.setHours(0,0,0,0);
+        if (!event.recurrence || event.recurrence === 'none') return event.date === todayStr;
+        if (viewDate < eventStart) return false;
+        if (event.recurrence === 'weekly') return viewDate.getDay() === eventStart.getDay();
+        if (event.recurrence === 'monthly') return viewDate.getDate() === eventStart.getDate();
+        if (event.recurrence === 'yearly') return viewDate.getMonth() === eventStart.getMonth() && viewDate.getDate() === eventStart.getDate();
+        return false;
+    }).length;
+
+    // Tasks Pending
+    const pendingTasksCount = StorageService.getHouseholdTasks().filter(t => !t.completed && !t._deleted).length;
+
+    // Shopping List items
+    const shopListCount = StorageService.getShoppingList().filter(i => !i.checked && !i._deleted).length;
+
+    // Update DOM
+    document.getElementById('summary-events').textContent = todayEventsCount;
+    document.getElementById('summary-tasks').textContent = pendingTasksCount;
+    document.getElementById('summary-list').textContent = shopListCount;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+
+  // Theme Init
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+  }
 
   // Check User Profile
   const user = localStorage.getItem('user_profile');
@@ -93,6 +154,103 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveConfigBtn = document.getElementById('save-config-btn');
   const manualSyncBtn = document.getElementById('manual-sync-btn');
   const syncFeedback = document.getElementById('sync-feedback');
+  const themeToggle = document.getElementById('theme-toggle');
+
+  if (themeToggle) {
+      themeToggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      themeToggle.addEventListener('change', () => {
+          if (themeToggle.checked) {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              localStorage.setItem('theme', 'dark');
+          } else {
+              document.documentElement.removeAttribute('data-theme');
+              localStorage.setItem('theme', 'light');
+          }
+      });
+
+      const importFile = document.getElementById('import-file'); // Assuming this element exists on the page
+      importFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                SyncService.restoreData(data);
+                alert('Copia de seguridad restaurada');
+            } catch (err) { alert('Archivo JSON inválido'); }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- Phase 2: Expenses Config Logic ---
+    const budgetInput = document.getElementById('monthly-budget');
+    const catList = document.getElementById('categories-list');
+    const newCatIcon = document.getElementById('new-cat-icon');
+    const newCatName = document.getElementById('new-cat-name');
+    const addCatBtn = document.getElementById('add-cat-btn');
+    const saveExpConfigBtn = document.getElementById('save-expenses-config-btn');
+
+    if (budgetInput && catList) {
+        budgetInput.value = StorageService.getMonthlyBudget();
+        let categories = StorageService.getCustomCategories();
+
+        function renderCategories() {
+            catList.innerHTML = '';
+            categories.forEach(cat => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.style.padding = '0.5rem';
+                div.style.borderBottom = '1px solid var(--btn-secondary-border)';
+                div.innerHTML = `
+                    <span><span style="font-size: 1.2rem; margin-right: 0.5rem;">${cat.icon}</span> ${cat.name}</span>
+                    <button class="btn-del-cat" data-id="${cat.id}" style="background: none; border: none; color: var(--danger); cursor: pointer;">✕</button>
+                `;
+                catList.appendChild(div);
+            });
+
+            document.querySelectorAll('.btn-del-cat').forEach(btn => {
+                btn.onclick = (e) => {
+                    const idToDelete = e.target.dataset.id;
+                    if (['supermarket', 'home', 'transport', 'leisure', 'health', 'clothing', 'salary', 'gift', 'other'].includes(idToDelete)) {
+                        if (!confirm('Esta es una categoría por defecto. ¿Seguro que quieres borrarla? (Si eliminas una categoría y tienes gastos con ella, aparecerán como "Otros")')) return;
+                    }
+                    categories = categories.filter(c => c.id !== idToDelete);
+                    renderCategories();
+                };
+            });
+        }
+
+        renderCategories();
+
+        addCatBtn.onclick = () => {
+            const icon = newCatIcon.value.trim() || '📦';
+            const name = newCatName.value.trim();
+            if (!name) return;
+
+            const newId = 'cat_' + Date.now();
+            categories.push({ id: newId, name: name, icon: icon, updatedAt: new Date().toISOString() });
+            newCatIcon.value = '';
+            newCatName.value = '';
+            renderCategories();
+        };
+
+        saveExpConfigBtn.onclick = () => {
+            const budget = parseFloat(budgetInput.value) || 0;
+            StorageService.saveMonthlyBudget(budget);
+            localStorage.setItem('budget_updatedAt', new Date().toISOString());
+
+            // Add updatedAt to all categories modified
+            StorageService.saveCustomCategories(categories);
+            
+            StorageService.triggerAutoSync();
+            alert('Ajustes de gastos guardados');
+        };
+    }
+  }
 
   if (tokenInput && gistIdInput) {
     // Load saved
@@ -126,4 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Wait a bit to ensure SyncService is loaded
   setTimeout(checkAutoSync, 1000);
+
+  // Load Dashboard Stats if on index
+  setTimeout(loadDashboardStats, 100);
 });

@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Recipes Elements
     const recipesList = document.getElementById('recipes-list');
+    const searchInput = document.getElementById('recipe-search-input');
     const btnAddRecipe = document.getElementById('btn-add-recipe');
     const recipeModal = document.getElementById('recipe-modal');
     const btnCancelRecipe = document.getElementById('cancel-recipe-btn');
@@ -147,14 +148,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Renderers ---
     function renderRecipes() {
         const recipes = getRecipes();
+        const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
         recipesList.innerHTML = '';
 
-        if (recipes.length === 0) {
-            recipesList.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: var(--text-muted);">Aún no hay recetas. ¡Añade tu primera receta!</div>';
+        let filteredRecipes = recipes;
+        if (searchTerm) {
+            // Split search terms by spaces or commas
+            const terms = searchTerm.split(/[\s,]+/).filter(t => t);
+            filteredRecipes = recipes.filter(r => {
+                const combinedText = ((r.title || '') + ' ' + (r.ingredients || '')).toLowerCase();
+                // Check if ALL terms are found in the recipe
+                return terms.every(term => combinedText.includes(term));
+            });
+        }
+
+        if (filteredRecipes.length === 0) {
+            if (searchTerm) {
+                recipesList.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: var(--text-muted);">No tienes ninguna receta con: <strong>${searchTerm}</strong></div>`;
+            } else {
+                recipesList.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: var(--text-muted);">Aún no hay recetas. ¡Añade tu primera receta!</div>';
+            }
             return;
         }
 
-        recipes.forEach(r => {
+        filteredRecipes.forEach(r => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
             
@@ -180,6 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Global expose for onclick
     window.editRecipeFallback = editRecipe;
     window.deleteRecipeFallback = deleteRecipe;
+
+    // Search event
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            renderRecipes();
+        });
+    }
 
     // --- Menu Logic ---
     function renderMenu() {

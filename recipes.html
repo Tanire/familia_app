@@ -114,8 +114,11 @@
 
         <!-- RECIPES VIEW -->
         <div id="recipes-view">
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-                <button id="btn-add-recipe" class="btn btn-secondary">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+                <div style="flex: 1; min-width: 200px;">
+                    <input type="text" id="recipe-search-input" class="form-input" placeholder="🔍 ¿Qué tienes en la nevera? (ej: pollo, arroz)...">
+                </div>
+                <button id="btn-add-recipe" class="btn btn-secondary" style="white-space: nowrap;">
                     + Nueva Receta
                 </button>
             </div>

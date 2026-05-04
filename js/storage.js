@@ -71,8 +71,8 @@ const StorageService = {
   getRecurringBills() { return this.get('recurring_bills', []); },
   saveRecurringBills(bills, suppress = false) { this.set('recurring_bills', bills, suppress); },
 
-  getTasks() { return this.get('household_tasks', []); },
-  saveTasks(tasks, suppress = false) { this.set('household_tasks', tasks, suppress); },
+  getMainImage() { return this.get('app_main_image', null); },
+  saveMainImage(b64, suppress = false) { this.set('app_main_image', b64, suppress); },
 
   // Phase 2 Additions
   getCustomCategories() { 

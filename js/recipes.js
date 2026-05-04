@@ -172,6 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const fragment = document.createDocumentFragment();
+
         filteredRecipes.forEach(r => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
@@ -191,8 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn btn-sm" style="color: var(--danger); background: none; border: none; box-shadow: none;" onclick="window.deleteRecipeFallback('${r.id}')">✕</button>
                 </div>
             `;
-            recipesList.appendChild(card);
+            fragment.appendChild(card);
         });
+        recipesList.appendChild(fragment);
     }
 
     // Global expose for onclick
@@ -200,9 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteRecipeFallback = deleteRecipe;
 
     // Search event
+    let searchTimeout = null;
     if (searchInput) {
         searchInput.addEventListener('input', () => {
-            renderRecipes();
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                renderRecipes();
+            }, 300);
         });
     }
 
@@ -223,6 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const menu = getWeeklyMenu();
         const recipes = getRecipes();
         menuWeekGrid.innerHTML = '';
+        
+        const fragment = document.createDocumentFragment();
 
         DAYS_OF_WEEK.forEach((day, index) => {
             const rId = menu[index];
@@ -250,8 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${recipe ? 'Cambiar' : 'Asignar'}
                 </button>
             `;
-            menuWeekGrid.appendChild(card);
+            fragment.appendChild(card);
         });
+        menuWeekGrid.appendChild(fragment);
     }
 
     window.openMenuSelect = (dayIndex) => {

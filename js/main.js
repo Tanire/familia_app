@@ -101,15 +101,11 @@ function loadDashboardStats() {
         return false;
     }).length;
 
-    // Tasks Pending
-    const pendingTasksCount = StorageService.getTasks().filter(t => !t.completed && !t._deleted).length;
-
     // Shopping List items
     const shopListCount = StorageService.getShoppingList().filter(i => !i.checked && !i._deleted).length;
 
     // Update DOM
     document.getElementById('summary-events').textContent = todayEventsCount;
-    document.getElementById('summary-tasks').textContent = pendingTasksCount;
     document.getElementById('summary-list').textContent = shopListCount;
 }
 
@@ -148,6 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(div);
   }
 
+  // Load Main Image if exists
+  const familyPhotoEl = document.querySelector('.family-photo');
+  if (familyPhotoEl) {
+      const savedImage = StorageService.getMainImage();
+      if (savedImage) {
+          familyPhotoEl.src = savedImage;
+      }
+  }
+
   // ---- Settings Page Logic (v1.20 Clean) ----
   const tokenInput = document.getElementById('gh-token');
   const gistIdInput = document.getElementById('gh-gist-id');
@@ -184,6 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function renderCategories() {
             catList.innerHTML = '';
+            const fragment = document.createDocumentFragment();
             categories.forEach(cat => {
                 const div = document.createElement('div');
                 div.style.display = 'flex';
@@ -195,8 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span><span style="font-size: 1.2rem; margin-right: 0.5rem;">${cat.icon}</span> ${cat.name}</span>
                     <button class="btn-del-cat" data-id="${cat.id}" style="background: none; border: none; color: var(--danger); cursor: pointer;">✕</button>
                 `;
-                catList.appendChild(div);
+                fragment.appendChild(div);
             });
+            catList.appendChild(fragment);
 
             document.querySelectorAll('.btn-del-cat').forEach(btn => {
                 btn.onclick = (e) => {
@@ -235,6 +242,56 @@ document.addEventListener('DOMContentLoaded', () => {
             StorageService.triggerAutoSync();
             alert('Ajustes de gastos guardados');
         };
+    }
+
+    // --- Phase 4: Main Screen Image Change ---
+    const mainImageInput = document.getElementById('main-image-input');
+    if (mainImageInput) {
+        mainImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Comprimir a max 800px
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convertir a JPEG con 0.7 de calidad
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    StorageService.saveMainImage(dataUrl);
+                    StorageService.triggerAutoSync();
+                    
+                    alert('Imagen de inicio actualizada y sincronizada');
+                }
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     }
   }
 

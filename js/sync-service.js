@@ -85,7 +85,7 @@ const SyncService = {
             expenses: StorageService.getExpenses(),
             shopping_list: StorageService.get('shopping_list', []),
             recurring_bills: StorageService.getRecurringBills(),
-            household_tasks: StorageService.getTasks(),
+            main_image: StorageService.getMainImage(),
             // Phase 2
             expense_categories: StorageService.getCustomCategories(),
             monthly_budget: { amount: StorageService.getMonthlyBudget(), updatedAt: localStorage.getItem('budget_updatedAt') || new Date().toISOString() },
@@ -99,7 +99,7 @@ const SyncService = {
         if (data.expenses) StorageService.saveExpenses(data.expenses, true);
         if (data.shopping_list) StorageService.set('shopping_list', data.shopping_list, true);
         if (data.recurring_bills) StorageService.saveRecurringBills(data.recurring_bills, true);
-        if (data.household_tasks) StorageService.saveTasks(data.household_tasks, true);
+        if (data.main_image) StorageService.saveMainImage(data.main_image, true);
         
         if (data.expense_categories) StorageService.saveCustomCategories(data.expense_categories, true);
         if (data.monthly_budget && data.monthly_budget.amount !== undefined) {
@@ -176,7 +176,7 @@ const SyncService = {
                 expenses: this.mergeArrays(localData.expenses, cloudData.expenses),
                 shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list),
                 recurring_bills: this.mergeArrays(localData.recurring_bills, cloudData.recurring_bills),
-                household_tasks: this.mergeArrays(localData.household_tasks, cloudData.household_tasks),
+                main_image: localData.main_image || cloudData.main_image, // Very simple merge for image, should probably use timestamp, but local overwrite is OK for now if we trigger upload manually
                 expense_categories: mergedCategories.length > 0 ? mergedCategories : localData.expense_categories,
                 monthly_budget: mergedBudget,
                 // Phase 3 Arrays

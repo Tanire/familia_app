@@ -29,7 +29,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
                     <div style="font-weight: 600;">Versión Instalada</div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem;">v1.22.2</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">v1.22.3</div>
                 </div>
                 <button onclick="window.location.reload()" class="btn btn-sm btn-secondary">
                     ⟳ Recargar
@@ -44,6 +44,18 @@
                     <input type="checkbox" id="theme-toggle">
                     <span class="slider round"></span>
                 </label>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-weight: 600;">Foto de Familia</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">Cambia la imagen principal</div>
+                </div>
+                <div>
+                    <input type="file" id="main-image-input" accept="image/*" style="display: none;">
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('main-image-input').click()">
+                        Subir Imagen
+                    </button>
+                </div>
             </div>
         </div>
 

@@ -48,41 +48,34 @@ const OCRService = {
         let maxPrice = 0.0;
         let items = [];
 
-        // Regex for Price: 12,34 or 12.34 options
-        // We look for a price at the END of the line usually
+        // Regex para buscar precios: 12,34 o 12.34
         const priceRegex = /(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/g;
+        // Regex para detectar "Cantidad x PrecioUnitario" ej: "2 x 1,50" o "2 * 1.50"
+        const unitPriceRegex = /(\d+)\s*[xX*]\s*(\d+[.,]\d{2})/;
         
-        // Keywords to identify total (to exclude from items)
         const totalKeywords = ['TOTAL', 'VENTA', 'IMPORTE', 'PAGAR', 'SUMA', 'TARJETA', 'EFECTIVO', 'CAMBIO', 'ENTREGADO'];
-        const badStartKeywords = ['TEL', 'CIF', 'NIF', 'CALLE', 'PLAZA', 'AVDA', 'C/', 'FACTURA', 'TICKET'];
+        const badStartKeywords = ['TEL', 'CIF', 'NIF', 'CALLE', 'PLAZA', 'AVDA', 'C/', 'FACTURA', 'TICKET', 'FECHA', 'HORA', 'GRACIAS'];
 
-        for (let line of lines) {
-            const trimmedLine = line.trim();
+        for (let i = 0; i < lines.length; i++) {
+            const trimmedLine = lines[i].trim();
             if (trimmedLine.length < 3) continue;
 
             const upperLine = trimmedLine.toUpperCase();
             
-            // Check for price matches
+            // Comprobar si hay precios
             const matches = trimmedLine.match(priceRegex);
              
             if (matches) {
-                // Potential price line
-                // Pick the last match as the likely price for the line
+                // Cogemos el último número como el precio total de la línea
                 const priceStr = matches[matches.length - 1];
-                
-                // Parse Price
-                let cleanNum = priceStr.replace(',', '.'); // Try simple replace
-                // Handle 1.000,00 situation vs 12,34
-                // If it has multiple dots/commas, it needs careful parsing, but let's keep it simple for now as per v1 logic inheritance
                 let num = parseFloat(priceStr.replace(',', '.'));
+                
                 if (isNaN(num)) {
-                     // Try reversing separator logic if failed
                      num = parseFloat(priceStr.replace('.', '').replace(',', '.'));
                 }
 
                 if (isNaN(num)) continue;
 
-                // Is it the TOTAL?
                 const isTotalLine = totalKeywords.some(k => upperLine.includes(k));
 
                 if (isTotalLine) {
@@ -90,29 +83,50 @@ const OCRService = {
                         maxPrice = num;
                     }
                 } else {
-                    // Likely an ITEM, if it's not some header info
-                    // Filter out headers/addresses
                     const isHeader = badStartKeywords.some(k => upperLine.startsWith(k));
                     
-                    if (!isHeader && num > 0 && num < 1000) { // Sanity check for item price
-                         // Extract Name: Everything before the price
-                         // Using lastIndexOf to split
+                    if (!isHeader && num > 0 && num < 1000) { 
+                         // Buscar nombre del artículo
                          const priceIdx = trimmedLine.lastIndexOf(priceStr);
                          let itemName = trimmedLine.substring(0, priceIdx).trim();
+                         itemName = itemName.replace(/[^a-zA-Z0-9\sñÑáéíóúÁÉÍÓÚ%]/g, '').trim();
                          
-                         // Cleanup noise characters
-                         itemName = itemName.replace(/[^a-zA-Z0-9\sñÑáéíóúÁÉÍÓÚ%]/g, '');
+                         let qty = 1;
+                         let unitPrice = num;
                          
+                         // Intentar buscar multiplicador en la misma línea (Ej: 2 x 1.50 ARTICULO 3.00)
+                         let unitMatch = trimmedLine.match(unitPriceRegex);
+                         
+                         // Si no hay multiplicador en la misma línea, mirar la línea anterior (muy común en Mercadona/Consum)
+                         if (!unitMatch && i > 0) {
+                             const prevLine = lines[i-1].trim();
+                             unitMatch = prevLine.match(unitPriceRegex);
+                             // Si la línea anterior tiene cantidad x precio, el nombre puede estar en la línea anterior o en esta
+                             if (unitMatch) {
+                                 const idx = prevLine.indexOf(unitMatch[0]);
+                                 if (idx > 3) {
+                                     itemName = prevLine.substring(0, idx).trim().replace(/[^a-zA-Z0-9\sñÑáéíóúÁÉÍÓÚ%]/g, '').trim();
+                                 }
+                             }
+                         }
+
+                         if (unitMatch) {
+                             qty = parseInt(unitMatch[1]);
+                             unitPrice = parseFloat(unitMatch[2].replace(',', '.'));
+                         }
+
                          if (itemName.length > 2) {
-                             items.push({ name: itemName, price: num });
+                             items.push({ 
+                                 name: itemName, 
+                                 price: num, 
+                                 qty: qty, 
+                                 unitPrice: unitPrice 
+                             });
                          }
                     }
                 }
             }
         }
-        
-        // Fallback: If no maxPrice found via keywords, try biggest number? 
-        // We'll stick to safe logic for now.
 
         return {
             text: text,

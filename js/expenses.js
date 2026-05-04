@@ -504,8 +504,8 @@ document.addEventListener('DOMContentLoaded', () => {
             mov.items.forEach(item => {
                 html += `
                 <div class="item-row" style="display:flex; justify-content:space-between; font-size: 0.85rem; margin-bottom: 2px;">
-                    <span>${item.name}</span>
-                    <span style="font-family:monospace;">${item.price.toFixed(2)}</span>
+                    <span style="flex-grow:1;">${item.name} ${item.qty && item.qty > 1 ? `<span style="color:var(--text-muted); font-size:0.75rem;">(${item.qty} x ${item.unitPrice ? item.unitPrice.toFixed(2) : ''}€)</span>` : ''}</span>
+                    <span style="font-family:monospace; margin-left: 10px;">${item.price.toFixed(2)}</span>
                 </div>`;
             });
         }

@@ -11,16 +11,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('recipe-search-input');
     const btnSearchWeb = document.getElementById('btn-search-web');
     const btnAddRecipe = document.getElementById('btn-add-recipe');
+
+    // Recipe Form Modal
     const recipeModal = document.getElementById('recipe-modal');
+    const recipeModalTitle = document.getElementById('recipe-modal-title');
     const btnCancelRecipe = document.getElementById('cancel-recipe-btn');
     const btnSaveRecipe = document.getElementById('save-recipe-btn');
-    
-    // Recipe Form
     const rIcon = document.getElementById('recipe-icon');
     const rTitle = document.getElementById('recipe-title');
     const rIngredients = document.getElementById('recipe-ingredients');
     const rSteps = document.getElementById('recipe-steps');
     let editingRecipeId = null;
+
+    // Recipe Preview Modal
+    const previewModal = document.getElementById('recipe-preview-modal');
+    const previewIcon = document.getElementById('preview-recipe-icon');
+    const previewTitle = document.getElementById('preview-recipe-title');
+    const previewIngredients = document.getElementById('preview-recipe-ingredients');
+    const previewStepsContainer = document.getElementById('preview-steps-container');
+    const previewSteps = document.getElementById('preview-recipe-steps');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
+    const previewEditBtn = document.getElementById('preview-edit-btn');
+    const previewAddShoppingBtn = document.getElementById('preview-add-shopping-btn');
+    let activePreviewRecipe = null;
 
     // Menu Elements
     const menuWeekGrid = document.getElementById('menu-week-grid');
@@ -38,22 +51,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Management ---
     function getRecipes() {
-        return StorageService.get('recipes', []);
+        return StorageService.getRecipes();
     }
     function saveRecipes(recipes) {
-        StorageService.set('recipes', recipes);
-        // Sync triggers handled on save button
+        StorageService.saveRecipes(recipes);
     }
 
     function getWeeklyMenu() {
-        // Simple array of 7 elements (0 = Lunes, 6 = Domingo) storing recipe IDs
-        return StorageService.get('weekly_menu', [null, null, null, null, null, null, null]);
+        return StorageService.getWeeklyMenu();
     }
     function saveWeeklyMenu(menu) {
-        StorageService.set('weekly_menu', menu);
+        StorageService.saveWeeklyMenu(menu);
     }
 
-    // --- Events ---
+    // --- View Toggles ---
     viewRecipesBtn.addEventListener('click', () => {
         recipesView.classList.remove('hidden');
         menuView.classList.add('hidden');
@@ -77,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rTitle.value = '';
         rIngredients.value = '';
         rSteps.value = '';
-        recipeModal.querySelector('h2').textContent = 'Nueva Receta';
+        if (recipeModalTitle) recipeModalTitle.textContent = 'Nueva Receta';
         recipeModal.classList.remove('hidden');
     });
 
@@ -87,11 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnSaveRecipe.addEventListener('click', () => {
         const title = rTitle.value.trim();
-        if (!title) { alert('El nombre es obligatorio.'); return; }
+        if (!title) { alert('El nombre de la receta es obligatorio.'); return; }
         
         const recipes = getRecipes();
         const newRecipe = {
-            id: editingRecipeId || Date.now().toString(),
+            id: editingRecipeId || Date.now().toString() + Math.floor(Math.random() * 1000),
             icon: rIcon.value.trim() || '🍲',
             title: title,
             ingredients: rIngredients.value.trim(),
@@ -100,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (editingRecipeId) {
-            const idx = recipes.findIndex(r => r.id === editingRecipeId);
+            const idx = recipes.findIndex(r => String(r.id) === String(editingRecipeId));
             if (idx !== -1) recipes[idx] = newRecipe;
         } else {
             recipes.push(newRecipe);
@@ -116,34 +127,87 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm('¿Borrar esta receta? Se quitará también del menú si estaba asignada.')) return;
         
         let recipes = getRecipes();
-        recipes = recipes.filter(r => r.id !== id);
+        recipes = recipes.filter(r => String(r.id) !== String(id));
         saveRecipes(recipes);
 
         // Clean up menu
         let menu = getWeeklyMenu();
         let changed = false;
         menu = menu.map(m => {
-            if (m === id) { changed = true; return null; }
+            if (String(m) === String(id)) { changed = true; return null; }
             return m;
         });
         if (changed) saveWeeklyMenu(menu);
 
         StorageService.triggerAutoSync();
+        if (previewModal) previewModal.classList.add('hidden');
         renderRecipes();
         renderMenu();
     }
 
     function editRecipe(id) {
-        const recipe = getRecipes().find(r => r.id === id);
+        const recipe = getRecipes().find(r => String(r.id) === String(id));
         if (!recipe) return;
+
+        if (previewModal) previewModal.classList.add('hidden');
 
         editingRecipeId = id;
         rIcon.value = recipe.icon || '🍲';
         rTitle.value = recipe.title;
         rIngredients.value = recipe.ingredients || '';
         rSteps.value = recipe.steps || '';
-        recipeModal.querySelector('h2').textContent = 'Editar Receta';
+        if (recipeModalTitle) recipeModalTitle.textContent = 'Editar Receta';
         recipeModal.classList.remove('hidden');
+    }
+
+    // --- Recipe Preview ---
+    function openRecipePreview(id) {
+        const recipe = getRecipes().find(r => String(r.id) === String(id));
+        if (!recipe) return;
+
+        activePreviewRecipe = recipe;
+        previewIcon.textContent = recipe.icon || '🍲';
+        previewTitle.textContent = recipe.title;
+
+        // Format ingredients
+        if (recipe.ingredients && recipe.ingredients.trim()) {
+            const lines = recipe.ingredients.split('\n').filter(l => l.trim());
+            previewIngredients.innerHTML = lines.map(line => `• ${escapeHtml(line)}`).join('<br>');
+        } else {
+            previewIngredients.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">No hay ingredientes especificados.</span>';
+        }
+
+        // Format steps
+        if (recipe.steps && recipe.steps.trim()) {
+            previewStepsContainer.style.display = 'block';
+            previewSteps.textContent = recipe.steps;
+        } else {
+            previewStepsContainer.style.display = 'none';
+        }
+
+        previewModal.classList.remove('hidden');
+    }
+
+    if (closePreviewBtn) {
+        closePreviewBtn.addEventListener('click', () => {
+            previewModal.classList.add('hidden');
+        });
+    }
+
+    if (previewEditBtn) {
+        previewEditBtn.addEventListener('click', () => {
+            if (activePreviewRecipe) editRecipe(activePreviewRecipe.id);
+        });
+    }
+
+    if (previewAddShoppingBtn) {
+        previewAddShoppingBtn.addEventListener('click', () => {
+            if (!activePreviewRecipe || !activePreviewRecipe.ingredients) {
+                alert('Esta receta no tiene ingredientes anotados.');
+                return;
+            }
+            addRecipeIngredientsToShopping([activePreviewRecipe]);
+        });
     }
 
     // --- Renderers ---
@@ -154,20 +218,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let filteredRecipes = recipes;
         if (searchTerm) {
-            // Split search terms by spaces or commas
             const terms = searchTerm.split(/[\s,]+/).filter(t => t);
             filteredRecipes = recipes.filter(r => {
                 const combinedText = ((r.title || '') + ' ' + (r.ingredients || '')).toLowerCase();
-                // Check if ALL terms are found in the recipe
                 return terms.every(term => combinedText.includes(term));
             });
         }
 
         if (filteredRecipes.length === 0) {
             if (searchTerm) {
-                recipesList.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: var(--text-muted);">No tienes ninguna receta con: <strong>${searchTerm}</strong></div>`;
+                recipesList.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2.5rem; color: var(--text-muted);">No hay recetas que coincidan con: <strong>${escapeHtml(searchTerm)}</strong></div>`;
             } else {
-                recipesList.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: var(--text-muted);">Aún no hay recetas. ¡Añade tu primera receta!</div>';
+                recipesList.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2.5rem; color: var(--text-muted);">Aún no tienes recetas guardadas.<br><small>Pulsa "+ Nueva Receta" para crear la primera.</small></div>`;
             }
             return;
         }
@@ -177,20 +239,20 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredRecipes.forEach(r => {
             const card = document.createElement('div');
             card.className = 'recipe-card';
-            
             const ingCount = r.ingredients ? r.ingredients.split('\n').filter(l => l.trim()).length : 0;
 
             card.innerHTML = `
-                <div class="recipe-header" onclick="window.editRecipeFallback('${r.id}')">
-                    <div class="recipe-icon">${r.icon}</div>
+                <div class="recipe-header" onclick="window.previewRecipeGlobal('${r.id}')">
+                    <div class="recipe-icon">${r.icon || '🍲'}</div>
                     <div class="recipe-info">
-                        <h3>${r.title}</h3>
-                        <p>${ingCount} Ingredientes</p>
+                        <h3>${escapeHtml(r.title)}</h3>
+                        <p>${ingCount} Ingrediente${ingCount === 1 ? '' : 's'}</p>
                     </div>
                 </div>
                 <div class="recipe-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="window.previewRecipeGlobal('${r.id}')">👀 Ver</button>
                     <button class="btn btn-sm btn-secondary" onclick="window.editRecipeFallback('${r.id}')">✏️ Editar</button>
-                    <button class="btn btn-sm" style="color: var(--danger); background: none; border: none; box-shadow: none;" onclick="window.deleteRecipeFallback('${r.id}')">✕</button>
+                    <button class="btn btn-sm" style="color: var(--danger); background: none; border: none; font-size: 1.2rem; padding: 0 0.5rem;" onclick="window.deleteRecipeFallback('${r.id}')" title="Eliminar">✕</button>
                 </div>
             `;
             fragment.appendChild(card);
@@ -198,7 +260,13 @@ document.addEventListener('DOMContentLoaded', () => {
         recipesList.appendChild(fragment);
     }
 
-    // Global expose for onclick
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Global expose
+    window.previewRecipeGlobal = openRecipePreview;
     window.editRecipeFallback = editRecipe;
     window.deleteRecipeFallback = deleteRecipe;
 
@@ -209,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchTimeout) clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 renderRecipes();
-            }, 300);
+            }, 250);
         });
     }
 
@@ -217,10 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSearchWeb.addEventListener('click', () => {
             const searchTerm = searchInput ? searchInput.value.trim() : '';
             if (!searchTerm) {
-                alert('Primero escribe algún ingrediente en el buscador para buscar recetas online.');
+                alert('Escribe algún ingrediente en el buscador para buscar recetas online.');
                 return;
             }
-            const query = encodeURIComponent(`recetas con ${searchTerm}`);
+            const query = encodeURIComponent(`recetas faciles con ${searchTerm}`);
             window.open(`https://www.google.com/search?q=${query}`, '_blank');
         });
     }
@@ -235,28 +303,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DAYS_OF_WEEK.forEach((day, index) => {
             const rId = menu[index];
-            const recipe = recipes.find(r => r.id === rId);
+            const recipe = recipes.find(r => String(r.id) === String(rId));
 
             const card = document.createElement('div');
             card.className = 'menu-day-card';
             
-            let contentHtml = '<div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">Sin asignar</div>';
+            let contentHtml = '<div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic; min-height: 40px; display: flex; align-items: center;">Sin comida asignada</div>';
             if (recipe) {
                 contentHtml = `
-                    <div style="display:flex; align-items:center; gap: 0.5rem;">
-                        <span style="font-size: 1.5rem;">${recipe.icon}</span>
-                        <strong style="color: var(--text-main);">${recipe.title}</strong>
+                    <div style="display:flex; align-items:center; gap: 0.75rem; min-height: 40px;">
+                        <span style="font-size: 1.6rem;">${recipe.icon || '🍲'}</span>
+                        <strong style="color: var(--text-main); font-size: 0.95rem;">${escapeHtml(recipe.title)}</strong>
                     </div>
                 `;
             }
 
             card.innerHTML = `
                 <div class="menu-day-title">${day}</div>
-                <div style="margin-bottom: 1rem; min-height: 40px; cursor: pointer;" onclick="window.openMenuSelect(${index})">
+                <div style="margin-bottom: 0.75rem; cursor: pointer;" onclick="window.openMenuSelect(${index})">
                     ${contentHtml}
                 </div>
                 <button class="btn btn-sm btn-secondary" style="width: 100%;" onclick="window.openMenuSelect(${index})">
-                    ${recipe ? 'Cambiar' : 'Asignar'}
+                    ${recipe ? '🔄 Cambiar' : '+ Asignar'}
                 </button>
             `;
             fragment.appendChild(card);
@@ -269,15 +337,14 @@ document.addEventListener('DOMContentLoaded', () => {
         selectDayTitle.textContent = `Menú para el ${DAYS_OF_WEEK[dayIndex]}`;
         
         const recipes = getRecipes();
-        selectDropdown.innerHTML = '<option value="">-- Comer fuera / Ninguna --</option>';
+        selectDropdown.innerHTML = '<option value="">-- Sin asignar / Comer fuera --</option>';
         recipes.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.id;
-            opt.textContent = `${r.icon} ${r.title}`;
+            opt.textContent = `${r.icon || '🍲'} ${r.title}`;
             selectDropdown.appendChild(opt);
         });
 
-        // Set current if exists
         const currentId = getWeeklyMenu()[dayIndex];
         if (currentId) selectDropdown.value = currentId;
 
@@ -295,31 +362,23 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMenu();
     });
 
-    // --- Shopping List Integration ---
-    btnSendShopping.addEventListener('click', () => {
-        if (!confirm('Esto copiará todos los ingredientes de las recetas asignadas en esta semana a tu Lista de la Compra. ¿Continuar?')) return;
-
-        const menu = getWeeklyMenu();
-        const recipes = getRecipes();
-        let shopList = StorageService.getShoppingList(); // from storage.js helper? We don't have one strictly named, let's use get()
-        if (!shopList || !Array.isArray(shopList)) shopList = StorageService.get('shopping_list', []);
-
+    // Helper to send ingredients to shopping
+    function addRecipeIngredientsToShopping(recipeList) {
+        let shopList = StorageService.getShoppingList();
         let addedCount = 0;
 
-        menu.forEach(rId => {
-            if (!rId) return;
-            const r = recipes.find(x => x.id === rId);
+        recipeList.forEach(r => {
             if (r && r.ingredients) {
                 const lines = r.ingredients.split('\n');
                 lines.forEach(line => {
                     const txt = line.trim();
                     if (txt) {
                         shopList.push({
-                            id: Date.now().toString() + Math.random(),
+                            id: Date.now().toString() + Math.floor(Math.random() * 10000),
                             name: txt,
-                            checked: false,
+                            completed: false,
                             category: 'supermarket',
-                            createdBy: 'Sistema (Menú Semanal)',
+                            createdBy: `${r.title}`,
                             _deleted: false,
                             updatedAt: new Date().toISOString()
                         });
@@ -330,14 +389,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (addedCount > 0) {
-            StorageService.set('shopping_list', shopList);
+            StorageService.saveShoppingList(shopList);
             StorageService.triggerAutoSync();
-            alert(`¡${addedCount} ingredientes añadidos a la Lista de Compra!`);
+            alert(`¡${addedCount} ingrediente(s) añadidos a la Lista de la Compra!`);
         } else {
-            alert('No hay ingredientes para añadir (revisa que el menú tenga recetas con ingredientes anotados).');
+            alert('No hay ingredientes para añadir.');
+        }
+    }
+
+    // --- Shopping List Integration for whole week ---
+    btnSendShopping.addEventListener('click', () => {
+        const menu = getWeeklyMenu();
+        const recipes = getRecipes();
+        const activeRecipes = menu.map(rId => recipes.find(x => String(x.id) === String(rId))).filter(Boolean);
+
+        if (activeRecipes.length === 0) {
+            alert('No hay recetas asignadas en el menú de esta semana.');
+            return;
+        }
+
+        if (confirm(`¿Copiar todos los ingredientes de las ${activeRecipes.length} recetas de esta semana a tu Lista de Compra?`)) {
+            addRecipeIngredientsToShopping(activeRecipes);
+        }
+    });
+
+    // Modal background close
+    [recipeModal, previewModal, selectModal].forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.add('hidden');
+            });
         }
     });
 
     // Init
     renderRecipes();
+
+    window.addEventListener('storage-updated', () => {
+        renderRecipes();
+        renderMenu();
+    });
 });

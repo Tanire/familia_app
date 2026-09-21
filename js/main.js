@@ -22,9 +22,8 @@ async function checkAutoSync() {
   // Smart Sync on Load
   try {
     const result = await SyncService.syncWithCloud(token, gistId);
-    // Support both old boolean return and new object return
-    const success = (typeof result === 'boolean') ? result : result.success;
-    const errorMsg = result.error || 'Error desconocido';
+    const success = (typeof result === 'boolean') ? result : (result && result.success);
+    const errorMsg = (result && result.error) ? result.error : 'Error desconocido';
 
     if (indicator) {
       if (success) {
@@ -41,7 +40,7 @@ async function checkAutoSync() {
       } else {
         indicator.innerHTML = '<span style="color: #EF4444;">●</span> Error Sync';
         const statusDisplay = document.getElementById('sync-status-display');
-        if (statusDisplay) statusDisplay.innerHTML = `<div style="color: var(--danger);">Error: ${errorMsg}</div>`;
+        if (statusDisplay) statusDisplay.innerHTML = `<div style="color: var(--danger); font-size: 0.9rem;">Error: ${errorMsg}</div>`;
       }
     }
 
@@ -59,54 +58,85 @@ function navigateTo(page) {
 }
 
 function loadDashboardStats() {
-    // Only run on index.html
     if (!document.getElementById('home-user-name')) return;
 
     // 1. Set Date
     const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const dateStr = new Date().toLocaleDateString('es-ES', dateOpts);
-    document.getElementById('date-display').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    const dateDisplay = document.getElementById('date-display');
+    if (dateDisplay) {
+        dateDisplay.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    }
 
     // 2. Set Name
     const userName = localStorage.getItem('user_profile') || 'Familia';
-    document.getElementById('home-user-name').textContent = userName.split(' ')[0]; // First name only
+    const userNameEl = document.getElementById('home-user-name');
+    if (userNameEl) {
+        userNameEl.textContent = userName.split(' ')[0];
+    }
 
-    // 3. Calculate Stats
-    // Events Today
-    const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    // 3. Today's Events Calculation
+    const now = new Date();
+    const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const viewDate = new Date(now);
+    viewDate.setHours(0, 0, 0, 0);
+
     const allEvents = StorageService.getEvents().filter(e => !e._deleted);
-    let todayEventsCount = 0;
-    
-    // Quick recurring check (Simplified for widget)
-    allEvents.forEach(event => {
-        if (!event.recurrence || event.recurrence === 'none') {
-            if (event.date === todayStr) todayEventsCount++;
-        } else {
-            // Very simplified check, real logic is in calendar.js
-            todayEventsCount++; // Just count it as potential for now to keep it lightweight, or copy full logic
-        }
-    });
-    
-    // Exact logic for recurring
-    const viewDate = new Date();
-    viewDate.setHours(0,0,0,0);
-    todayEventsCount = allEvents.filter(event => {
+    const todayEventsCount = allEvents.filter(event => {
         const eventStart = new Date(event.date);
-        eventStart.setHours(0,0,0,0);
+        eventStart.setHours(0, 0, 0, 0);
+
         if (!event.recurrence || event.recurrence === 'none') return event.date === todayStr;
         if (viewDate < eventStart) return false;
         if (event.recurrence === 'weekly') return viewDate.getDay() === eventStart.getDay();
         if (event.recurrence === 'monthly') return viewDate.getDate() === eventStart.getDate();
-        if (event.recurrence === 'yearly') return viewDate.getMonth() === eventStart.getMonth() && viewDate.getDate() === eventStart.getDate();
+        if (event.recurrence === 'yearly') {
+            return viewDate.getMonth() === eventStart.getMonth() && viewDate.getDate() === eventStart.getDate();
+        }
         return false;
     }).length;
 
-    // Shopping List items
-    const shopListCount = StorageService.getShoppingList().filter(i => !i.checked && !i._deleted).length;
+    const summaryEventsEl = document.getElementById('summary-events');
+    if (summaryEventsEl) summaryEventsEl.textContent = todayEventsCount;
 
-    // Update DOM
-    document.getElementById('summary-events').textContent = todayEventsCount;
-    document.getElementById('summary-list').textContent = shopListCount;
+    // 4. Shopping List items pending
+    const shopListCount = StorageService.getShoppingList().filter(i => !i.completed && !i._deleted).length;
+    const summaryListEl = document.getElementById('summary-list');
+    if (summaryListEl) summaryListEl.textContent = shopListCount;
+
+    // 5. Monthly Expenses Balance
+    const viewMonth = now.getMonth();
+    const viewYear = now.getFullYear();
+    const allExpenses = StorageService.getExpenses().filter(e => !e._deleted);
+    let monthExpenseTotal = 0;
+    allExpenses.forEach(e => {
+        const d = new Date(e.date);
+        if (d.getMonth() === viewMonth && d.getFullYear() === viewYear && e.type !== 'income') {
+            monthExpenseTotal += parseFloat(e.amount) || 0;
+        }
+    });
+
+    const summaryBalanceEl = document.getElementById('summary-balance');
+    if (summaryBalanceEl) summaryBalanceEl.textContent = `${monthExpenseTotal.toFixed(0)}€`;
+
+    // 6. Today's Menu
+    const homeMenuTodayEl = document.getElementById('home-menu-today');
+    if (homeMenuTodayEl) {
+        // Monday = 0 ... Sunday = 6
+        let dayOfWeek = now.getDay() - 1;
+        if (dayOfWeek === -1) dayOfWeek = 6; // Sunday
+
+        const menu = StorageService.getWeeklyMenu();
+        const recipes = StorageService.getRecipes();
+        const todayRecipeId = menu[dayOfWeek];
+        const recipe = recipes.find(r => String(r.id) === String(todayRecipeId));
+
+        if (recipe) {
+            homeMenuTodayEl.textContent = `${recipe.icon || '🍲'} ${recipe.title}`;
+        } else {
+            homeMenuTodayEl.textContent = '🍲 Menú: Sin asignar';
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -121,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const user = localStorage.getItem('user_profile');
   if (!user) {
     setTimeout(() => {
-      const name = prompt("¡Bienvenido! ¿Cómo te llamas? (Para saber quién apunta las cosas)");
+      const name = prompt("¡Bienvenido! ¿Cómo te llamas? (Para saber quién añade o edita elementos)");
       if (name && name.trim()) {
         localStorage.setItem('user_profile', name.trim());
         location.reload();
@@ -129,18 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 500);
   }
 
-  // Inject PROMINENT Indicator if not exists
+  // Inject Sync Indicator if not exists
   if (!document.getElementById('sync-indicator')) {
     const div = document.createElement('div');
     div.id = 'sync-indicator';
     div.className = 'sync-indicator';
     div.innerHTML = '<span style="color: #9CA3AF;">●</span> Iniciando...';
-
-    // Add click listener to go to settings if disconnected
+    div.title = 'Estado de sincronización (clic para ir a Ajustes)';
     div.addEventListener('click', () => {
       navigateTo('settings.html');
     });
-
     document.body.appendChild(div);
   }
 
@@ -153,17 +181,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   }
 
-  // ---- Settings Page Logic (v1.20 Clean) ----
+  // ---- Settings Page Logic ----
   const tokenInput = document.getElementById('gh-token');
   const gistIdInput = document.getElementById('gh-gist-id');
   const saveConfigBtn = document.getElementById('save-config-btn');
   const manualSyncBtn = document.getElementById('manual-sync-btn');
   const syncFeedback = document.getElementById('sync-feedback');
   const themeToggle = document.getElementById('theme-toggle');
+  const profileNameInput = document.getElementById('user-profile-name');
+  const saveProfileBtn = document.getElementById('save-profile-btn');
 
+  // Theme switch
   if (themeToggle) {
       themeToggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
-      
       themeToggle.addEventListener('change', () => {
           if (themeToggle.checked) {
               document.documentElement.setAttribute('data-theme', 'dark');
@@ -173,162 +203,242 @@ document.addEventListener('DOMContentLoaded', () => {
               localStorage.setItem('theme', 'light');
           }
       });
-
-
-    // --- Phase 2: Expenses Config Logic ---
-    const budgetInput = document.getElementById('monthly-budget');
-    const catList = document.getElementById('categories-list');
-    const newCatIcon = document.getElementById('new-cat-icon');
-    const newCatName = document.getElementById('new-cat-name');
-    const addCatBtn = document.getElementById('add-cat-btn');
-    const saveExpConfigBtn = document.getElementById('save-expenses-config-btn');
-
-    if (budgetInput && catList) {
-        budgetInput.value = StorageService.getMonthlyBudget();
-        let categories = StorageService.getCustomCategories();
-
-        function renderCategories() {
-            catList.innerHTML = '';
-            const fragment = document.createDocumentFragment();
-            categories.forEach(cat => {
-                const div = document.createElement('div');
-                div.style.display = 'flex';
-                div.style.justifyContent = 'space-between';
-                div.style.alignItems = 'center';
-                div.style.padding = '0.5rem';
-                div.style.borderBottom = '1px solid var(--btn-secondary-border)';
-                div.innerHTML = `
-                    <span><span style="font-size: 1.2rem; margin-right: 0.5rem;">${cat.icon}</span> ${cat.name}</span>
-                    <button class="btn-del-cat" data-id="${cat.id}" style="background: none; border: none; color: var(--danger); cursor: pointer;">✕</button>
-                `;
-                fragment.appendChild(div);
-            });
-            catList.appendChild(fragment);
-
-            document.querySelectorAll('.btn-del-cat').forEach(btn => {
-                btn.onclick = (e) => {
-                    const idToDelete = e.target.dataset.id;
-                    if (['supermarket', 'home', 'transport', 'leisure', 'health', 'clothing', 'salary', 'gift', 'other'].includes(idToDelete)) {
-                        if (!confirm('Esta es una categoría por defecto. ¿Seguro que quieres borrarla? (Si eliminas una categoría y tienes gastos con ella, aparecerán como "Otros")')) return;
-                    }
-                    categories = categories.filter(c => c.id !== idToDelete);
-                    renderCategories();
-                };
-            });
-        }
-
-        renderCategories();
-
-        addCatBtn.onclick = () => {
-            const icon = newCatIcon.value.trim() || '📦';
-            const name = newCatName.value.trim();
-            if (!name) return;
-
-            const newId = 'cat_' + Date.now();
-            categories.push({ id: newId, name: name, icon: icon, updatedAt: new Date().toISOString() });
-            newCatIcon.value = '';
-            newCatName.value = '';
-            renderCategories();
-        };
-
-        saveExpConfigBtn.onclick = () => {
-            const budget = parseFloat(budgetInput.value) || 0;
-            StorageService.saveMonthlyBudget(budget);
-            localStorage.setItem('budget_updatedAt', new Date().toISOString());
-
-            // Add updatedAt to all categories modified
-            StorageService.saveCustomCategories(categories);
-            
-            StorageService.triggerAutoSync();
-            alert('Ajustes de gastos guardados');
-        };
-    }
-
-    // --- Phase 4: Main Screen Image Change ---
-    const mainImageInput = document.getElementById('main-image-input');
-    if (mainImageInput) {
-        mainImageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    // Comprimir a max 800px
-                    const MAX_WIDTH = 800;
-                    const MAX_HEIGHT = 800;
-
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Convertir a JPEG con 0.7 de calidad
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    StorageService.saveMainImage(dataUrl);
-                    StorageService.triggerAutoSync();
-                    
-                    alert('Imagen de inicio actualizada y sincronizada');
-                }
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
   }
 
+  // Profile Name
+  if (profileNameInput) {
+      profileNameInput.value = localStorage.getItem('user_profile') || '';
+      if (saveProfileBtn) {
+          saveProfileBtn.addEventListener('click', () => {
+              const name = profileNameInput.value.trim();
+              if (name) {
+                  localStorage.setItem('user_profile', name);
+                  alert('Nombre de usuario actualizado.');
+              }
+          });
+      }
+  }
+
+  // Notifications Enable Button
+  const enableNotifBtn = document.getElementById('enable-notif-btn');
+  const notifStatusText = document.getElementById('notif-status-text');
+  if (enableNotifBtn && typeof NotificationService !== 'undefined') {
+      const perm = NotificationService.getPermission();
+      if (perm === 'granted') {
+          if (notifStatusText) notifStatusText.textContent = '✅ Notificaciones activadas';
+          enableNotifBtn.disabled = true;
+          enableNotifBtn.textContent = 'Activadas';
+      } else if (perm === 'denied') {
+          if (notifStatusText) notifStatusText.textContent = '❌ Bloqueadas en los ajustes del navegador';
+      }
+
+      enableNotifBtn.addEventListener('click', async () => {
+          const ok = await NotificationService.requestPermission();
+          if (ok) {
+              if (notifStatusText) notifStatusText.textContent = '✅ Notificaciones activadas';
+              enableNotifBtn.disabled = true;
+              enableNotifBtn.textContent = 'Activadas';
+              NotificationService.show('¡Notificaciones Activadas!', {
+                  body: 'Recibirás avisos de eventos y recordatorios de la casa.'
+              });
+          } else {
+              alert('No se otorgaron permisos de notificación.');
+          }
+      });
+  }
+
+  // Expenses Config Logic
+  const budgetInput = document.getElementById('monthly-budget');
+  const catList = document.getElementById('categories-list');
+  const newCatIcon = document.getElementById('new-cat-icon');
+  const newCatName = document.getElementById('new-cat-name');
+  const addCatBtn = document.getElementById('add-cat-btn');
+  const saveExpConfigBtn = document.getElementById('save-expenses-config-btn');
+
+  if (budgetInput && catList) {
+      budgetInput.value = StorageService.getMonthlyBudget();
+      let categories = StorageService.getCustomCategories();
+
+      function renderCategories() {
+          catList.innerHTML = '';
+          const fragment = document.createDocumentFragment();
+          categories.forEach(cat => {
+              const div = document.createElement('div');
+              div.style.display = 'flex';
+              div.style.justifyContent = 'space-between';
+              div.style.alignItems = 'center';
+              div.style.padding = '0.5rem';
+              div.style.borderBottom = '1px solid var(--btn-secondary-border, #E5E7EB)';
+              div.innerHTML = `
+                  <span><span style="font-size: 1.2rem; margin-right: 0.5rem;">${cat.icon}</span> ${cat.name}</span>
+                  <button class="btn-del-cat" data-id="${cat.id}" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.1rem; padding: 0 0.5rem;">✕</button>
+              `;
+              fragment.appendChild(div);
+          });
+          catList.appendChild(fragment);
+
+          catList.querySelectorAll('.btn-del-cat').forEach(btn => {
+              btn.onclick = (e) => {
+                  const idToDelete = e.target.dataset.id;
+                  if (['supermarket', 'home', 'transport', 'leisure', 'health', 'clothing', 'salary', 'gift', 'other'].includes(idToDelete)) {
+                      if (!confirm('Esta es una categoría básica. ¿Seguro que quieres eliminarla?')) return;
+                  }
+                  categories = categories.filter(c => c.id !== idToDelete);
+                  renderCategories();
+              };
+          });
+      }
+
+      renderCategories();
+
+      if (addCatBtn) {
+          addCatBtn.onclick = () => {
+              const icon = (newCatIcon && newCatIcon.value.trim()) ? newCatIcon.value.trim() : '📦';
+              const name = (newCatName && newCatName.value.trim()) ? newCatName.value.trim() : '';
+              if (!name) return;
+
+              const newId = 'cat_' + Date.now();
+              categories.push({ id: newId, name: name, icon: icon, updatedAt: new Date().toISOString() });
+              if (newCatIcon) newCatIcon.value = '';
+              if (newCatName) newCatName.value = '';
+              renderCategories();
+          };
+      }
+
+      if (saveExpConfigBtn) {
+          saveExpConfigBtn.onclick = () => {
+              const budget = parseFloat(budgetInput.value) || 0;
+              StorageService.saveMonthlyBudget(budget);
+              localStorage.setItem('budget_updatedAt', new Date().toISOString());
+              StorageService.saveCustomCategories(categories);
+              StorageService.triggerAutoSync();
+              alert('Ajustes de presupuesto y categorías guardados con éxito.');
+          };
+      }
+  }
+
+  // Main Screen Image Change
+  const mainImageInput = document.getElementById('main-image-input');
+  if (mainImageInput) {
+      mainImageInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function(event) {
+              const img = new Image();
+              img.onload = function() {
+                  const canvas = document.createElement('canvas');
+                  let width = img.width;
+                  let height = img.height;
+                  const MAX_WIDTH = 800;
+                  const MAX_HEIGHT = 800;
+
+                  if (width > height) {
+                      if (width > MAX_WIDTH) {
+                          height *= MAX_WIDTH / width;
+                          width = MAX_WIDTH;
+                      }
+                  } else {
+                      if (height > MAX_HEIGHT) {
+                          width *= MAX_HEIGHT / height;
+                          height = MAX_HEIGHT;
+                      }
+                  }
+
+                  canvas.width = width;
+                  canvas.height = height;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(img, 0, 0, width, height);
+
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                  StorageService.saveMainImage(dataUrl);
+                  StorageService.triggerAutoSync();
+                  
+                  alert('Foto principal actualizada y sincronizada.');
+                  if (familyPhotoEl) familyPhotoEl.src = dataUrl;
+              };
+              img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+      });
+  }
+
+  // Backup JSON Export & Import
+  const exportBackupBtn = document.getElementById('export-backup-btn');
+  const importBackupInput = document.getElementById('import-backup-input');
+  const importBackupBtn = document.getElementById('import-backup-btn');
+
+  if (exportBackupBtn) {
+      exportBackupBtn.addEventListener('click', () => {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(StorageService.exportBackup());
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.setAttribute("href", dataStr);
+          downloadAnchor.setAttribute("download", `copia_seguridad_familia_${new Date().toISOString().split('T')[0]}.json`);
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+      });
+  }
+
+  if (importBackupBtn && importBackupInput) {
+      importBackupBtn.addEventListener('click', () => {
+          importBackupInput.click();
+      });
+
+      importBackupInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              const res = StorageService.importBackup(event.target.result);
+              if (res.success) {
+                  alert('¡Copia de seguridad restaurada correctamente! Recargando...');
+                  window.location.reload();
+              } else {
+                  alert('Error al restaurar copia: ' + (res.error || 'Archivo inválido'));
+              }
+          };
+          reader.readAsText(file);
+      });
+  }
+
+  // GitHub Credentials
   if (tokenInput && gistIdInput) {
-    // Load saved
     tokenInput.value = localStorage.getItem('gh_token') || '';
     gistIdInput.value = localStorage.getItem('gh_gist_id') || '';
 
-    saveConfigBtn.addEventListener('click', () => {
-      const token = tokenInput.value.trim();
-      const gistId = gistIdInput.value.trim();
-      if (token) localStorage.setItem('gh_token', token);
-      if (gistId) localStorage.setItem('gh_gist_id', gistId);
-      alert('Credenciales guardadas. Recargando...');
-      window.location.reload();
-    });
+    if (saveConfigBtn) {
+        saveConfigBtn.addEventListener('click', () => {
+          const token = tokenInput.value.trim();
+          const gistId = gistIdInput.value.trim();
+          if (token) localStorage.setItem('gh_token', token);
+          if (gistId) localStorage.setItem('gh_gist_id', gistId);
+          alert('Credenciales guardadas con éxito.');
+          window.location.reload();
+        });
+    }
   }
 
   if (manualSyncBtn) {
     manualSyncBtn.addEventListener('click', async () => {
       manualSyncBtn.disabled = true;
       manualSyncBtn.textContent = 'Sincronizando...';
-      syncFeedback.textContent = '';
+      if (syncFeedback) syncFeedback.textContent = '';
 
       await checkAutoSync();
 
       manualSyncBtn.disabled = false;
       manualSyncBtn.textContent = '🔄 Sincronizar Ahora';
-      syncFeedback.textContent = 'Proceso finalizado.';
-      syncFeedback.style.color = 'var(--text-muted)';
+      if (syncFeedback) {
+          syncFeedback.textContent = 'Sincronización completada.';
+          syncFeedback.style.color = 'var(--text-muted)';
+      }
     });
   }
 
-  // Wait a bit to ensure SyncService is loaded
-  setTimeout(checkAutoSync, 1000);
-
-  // Load Dashboard Stats if on index
+  setTimeout(checkAutoSync, 800);
   setTimeout(loadDashboardStats, 100);
   window.addEventListener('storage-updated', loadDashboardStats);
 });

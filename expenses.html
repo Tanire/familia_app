@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gastos Mensuales</title>
+    <title>Gastos Mensuales - Casa Mocholí Chordà</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- PWA Manifest & Icons -->
@@ -22,16 +22,15 @@
         </div>
 
         <header class="home-header">
-            <h2>Gastos e Ingresos</h2>
+            <h2>💶 Gastos e Ingresos</h2>
 
             <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
                 <button id="prev-month-stats" class="arrow-btn btn btn-secondary">←</button>
-                <div id="stats-month-year" style="font-weight: 600;"></div>
+                <div id="stats-month-year" style="font-weight: 700; font-size: 1.1rem;"></div>
                 <button id="next-month-stats" class="arrow-btn btn btn-secondary">→</button>
             </div>
 
             <div id="balance-container" class="balance-card">
-                <!-- Balance Chart/Info will go here -->
                 <div class="balance-row">
                     <div class="balance-item income">
                         <small>Ingresos</small>
@@ -42,19 +41,19 @@
                         <span id="total-expense">0.00 €</span>
                     </div>
                 </div>
-                <div class="balance-total" style="flex: 1; border-left: 1px solid #E5E7EB; padding-left: 1rem;">
+                <div class="balance-total" style="flex: 1; border-left: 1px solid var(--btn-secondary-border, #E5E7EB); padding-left: 1rem;">
                     <small>Balance</small>
                     <span id="total-balance">0.00 €</span>
                 </div>
             </div>
             
-            <div id="budget-container" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); display: none; margin-bottom: 1rem; text-align: left;">
-                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+            <div id="budget-container" style="background: var(--bg-card); padding: 1rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--btn-secondary-border, #E5E7EB); display: none; margin-bottom: 1rem; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
                     <strong style="color: var(--text-muted);">Presupuesto Mensual</strong>
-                    <span id="budget-text" style="font-weight: 600;">0 / 1000 €</span>
+                    <span id="budget-text" style="font-weight: 700;">0 / 1000 €</span>
                 </div>
-                <div style="width: 100%; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden;">
-                    <div id="budget-bar" style="height: 100%; width: 0%; background: var(--secondary); transition: width 0.3s, background-color 0.3s;"></div>
+                <div style="width: 100%; height: 10px; background: var(--bg-body); border-radius: 5px; overflow: hidden; border: 1px solid var(--btn-secondary-border, #E5E7EB);">
+                    <div id="budget-bar" style="height: 100%; width: 0%; background: var(--secondary); transition: width 0.4s ease, background-color 0.4s ease;"></div>
                 </div>
             </div>
         </header>
@@ -65,11 +64,11 @@
 
             <button id="scan-btn" class="btn btn-secondary"
                 style="width: 100%; margin-bottom: 1rem; border: 1px dashed var(--primary); color: var(--primary);">
-                📸 Escanear Ticket (Beta)
+                📸 Escanear Ticket (OCR)
             </button>
             <input type="file" id="camera-input" accept="image/*" capture="environment" style="display: none;">
             <div id="scan-status" class="hidden"
-                style="text-align: center; font-size: 0.8rem; margin-bottom: 1rem; color: var(--text-muted);">
+                style="text-align: center; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-muted);">
                 Procesando imagen... <span id="scan-progress">0%</span>
             </div>
 
@@ -81,7 +80,7 @@
             </div>
 
             <div class="form-group">
-                <input type="text" id="expense-title" class="form-input" placeholder="Concepto (ej: Mercadona)">
+                <input type="text" id="expense-title" class="form-input" placeholder="Concepto (ej: Mercadona, Luz, Gasolina...)">
             </div>
 
             <div class="form-group">
@@ -91,46 +90,46 @@
 
             <div class="form-row">
                 <div class="form-group" style="flex:1">
+                    <label class="form-label">Importe (€)</label>
                     <input type="number" id="expense-amount" class="form-input" placeholder="0.00" step="0.01">
                 </div>
                 <div class="form-group" style="flex:1">
+                    <label class="form-label">Categoría</label>
                     <select id="expense-category" class="form-input">
-                        <option value="other">📦 Otros</option>
-                        <option value="supermarket">🛒 Supermercado</option>
-                        <option value="home">🏠 Casa</option>
-                        <option value="transport">🚗 Transporte</option>
-                        <option value="leisure">🎉 Ocio</option>
-                        <option value="health">💊 Salud</option>
-                        <option value="clothing">👕 Ropa</option>
+                        <!-- Populated dynamically -->
                     </select>
                 </div>
             </div>
 
             <!-- Recurring Options -->
             <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" id="is-recurring" style="width: auto; margin: 0;">
-                <label for="is-recurring" style="font-size: 0.9rem; user-select: none;">Es un Gasto Fijo
-                    (Mensual)</label>
+                <input type="checkbox" id="is-recurring" style="width: auto; margin: 0; cursor: pointer;">
+                <label for="is-recurring" style="font-size: 0.9rem; user-select: none; cursor: pointer;">Es un Gasto Fijo (Mensual recurrente)</label>
             </div>
 
             <div id="recurring-options" class="hidden"
-                style="margin-top: 0.5rem; background: #F3F4F6; padding: 0.5rem; border-radius: 8px;">
+                style="margin-top: 0.5rem; background: var(--bg-body); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--btn-secondary-border, #E5E7EB);">
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label style="font-size: 0.8rem;">Día de pago (1-31):</label>
+                    <label style="font-size: 0.85rem;">Día de cargo mensual (1-31):</label>
                     <input type="number" id="recurring-day" class="form-input" min="1" max="31" placeholder="Ej: 5">
                 </div>
             </div>
 
             <button id="add-expense-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                + Añadir Gasto
+                + Guardar Movimiento
             </button>
         </div>
 
         <!-- Toggle View -->
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; justify-content: center;">
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; justify-content: center; flex-wrap: wrap;">
             <button id="view-expenses-btn" class="btn btn-sm btn-primary">Historial Mes</button>
             <button id="view-recurring-btn" class="btn btn-sm btn-secondary">Ver Fijos</button>
             <button id="view-charts-btn" class="btn btn-sm btn-secondary">📊 Gráficos</button>
+        </div>
+
+        <!-- Category filter in expenses history -->
+        <div id="expense-filters-container" class="filter-pills" style="margin-bottom: 0.75rem;">
+            <!-- Category filter pills generated dynamically -->
         </div>
 
         <div id="expenses-list" class="expense-list">
@@ -150,11 +149,18 @@
             </div>
 
             <div class="card">
-                <h3 style="text-align: center; margin-bottom: 1rem;">Evolución Mensual</h3>
+                <h3 style="text-align: center; margin-bottom: 1rem;">Evolución Mensual (Últimos 6 meses)</h3>
                 <div style="height: 300px; position: relative;">
                     <canvas id="monthlyChart"></canvas>
                 </div>
             </div>
+        </div>
+
+        <!-- Share monthly summary button -->
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <button id="share-monthly-whatsapp-btn" class="btn btn-sm btn-whatsapp">
+                📲 Compartir Resumen del Mes por WhatsApp
+            </button>
         </div>
 
     </div>

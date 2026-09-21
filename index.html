@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Casa Mocholí Chordà</title>
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- PWA Manifest & Icons -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4F46E5">
@@ -17,27 +17,35 @@
 <body>
   <div class="main-container">
     <header class="home-header">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
         <div style="text-align: left;">
-            <h1 class="app-title" style="font-size: 2rem; margin-bottom: 0;">¡Hola, <span id="home-user-name">Familia</span>!</h1>
+            <h1 class="app-title" style="font-size: 2rem; margin-bottom: 0.2rem;">¡Hola, <span id="home-user-name">Familia</span>! 👋</h1>
             <p id="date-display" style="color: var(--text-muted); font-size: 0.95rem;">Cargando fecha...</p>
         </div>
-        <div class="family-photo-container" style="width: 60px; height: 60px; margin: 0;">
-          <img src="assets/family_photo.jpg" alt="Foto" class="family-photo">
+        <div class="family-photo-container" style="width: 60px; height: 60px; margin: 0; box-shadow: var(--shadow-md);">
+          <img src="assets/family_photo.jpg" alt="Foto Familia" class="family-photo">
         </div>
       </div>
 
       <!-- Dynamic Summary Card -->
-      <div class="card" style="text-align: left; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; padding: 1.5rem; margin-bottom: 2rem;">
-          <h3 style="color: white; font-size: 1.1rem; margin-bottom: 1rem; opacity: 0.9;">📋 Resumen de Hoy</h3>
-          <div style="display: flex; justify-content: space-between; gap: 1rem;">
-             <div style="flex:1;">
-                 <div style="font-size: 2rem; font-weight: 800; line-height: 1;" id="summary-events">0</div>
-                 <div style="font-size: 0.8rem; opacity: 0.8;">Eventos</div>
+      <div class="card" style="text-align: left; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; padding: 1.5rem; margin-bottom: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+              <h3 style="color: white; font-size: 1.1rem; margin: 0; opacity: 0.95;">📋 Resumen de Hoy</h3>
+              <span id="home-menu-today" style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; backdrop-filter: blur(4px);">🍲 Menú: Cargando...</span>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; text-align: center;">
+             <div style="background: rgba(255,255,255,0.12); padding: 0.75rem 0.5rem; border-radius: var(--radius-md); backdrop-filter: blur(4px); cursor: pointer;" onclick="navigateTo('calendar.html')">
+                 <div style="font-size: 1.75rem; font-weight: 800; line-height: 1.1;" id="summary-events">0</div>
+                 <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 4px;">📅 Eventos Hoy</div>
              </div>
-             <div style="flex:1;">
-                 <div style="font-size: 2rem; font-weight: 800; line-height: 1;" id="summary-list">0</div>
-                 <div style="font-size: 0.8rem; opacity: 0.8;">En Lista</div>
+             <div style="background: rgba(255,255,255,0.12); padding: 0.75rem 0.5rem; border-radius: var(--radius-md); backdrop-filter: blur(4px); cursor: pointer;" onclick="navigateTo('shopping.html')">
+                 <div style="font-size: 1.75rem; font-weight: 800; line-height: 1.1;" id="summary-list">0</div>
+                 <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 4px;">🛒 Por Comprar</div>
+             </div>
+             <div style="background: rgba(255,255,255,0.12); padding: 0.75rem 0.5rem; border-radius: var(--radius-md); backdrop-filter: blur(4px); cursor: pointer;" onclick="navigateTo('expenses.html')">
+                 <div style="font-size: 1.25rem; font-weight: 800; line-height: 1.4;" id="summary-balance">0.00€</div>
+                 <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 4px;">💶 Gastos Mes</div>
              </div>
           </div>
       </div>
@@ -48,7 +56,7 @@
       <div class="menu-card" onclick="navigateTo('calendar.html')">
         <div class="menu-icon">📅</div>
         <div class="menu-title">Calendario</div>
-        <div class="menu-desc">Eventos y recordatorios</div>
+        <div class="menu-desc">Eventos, cumpleaños y citas</div>
       </div>
 
       <!-- Recipes Card -->
@@ -62,14 +70,14 @@
       <div class="menu-card" onclick="navigateTo('expenses.html')">
         <div class="menu-icon">💶</div>
         <div class="menu-title">Gastos Mensuales</div>
-        <div class="menu-desc">Control de economía</div>
+        <div class="menu-desc">Control de economía familiar</div>
       </div>
 
       <!-- Shopping List Card -->
       <div class="menu-card" onclick="navigateTo('shopping.html')">
         <div class="menu-icon">🛒</div>
         <div class="menu-title">Lista Compra</div>
-        <div class="menu-desc">Añadir productos</div>
+        <div class="menu-desc">Añadir y compartir productos</div>
       </div>
 
       <!-- Settings Card -->
@@ -79,18 +87,18 @@
         <div class="menu-desc">Sincronización y Config</div>
       </div>
     </div>
-    <footer style="margin-top: auto; padding: 2rem 0 4rem 0; text-align: center; color: var(--text-muted);">
-      <p style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem;">By
-        JMSystems</p>
-      <p style="font-family: 'Inter', sans-serif; font-size: 0.75rem; opacity: 0.7;">Versión 1.22.3</p>
+
+    <footer style="margin-top: auto; padding: 2.5rem 0 4rem 0; text-align: center; color: var(--text-muted);">
+      <p style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem;">By JMSystems</p>
+      <p style="font-family: 'Inter', sans-serif; font-size: 0.75rem; opacity: 0.7;">Versión 1.18.02</p>
     </footer>
   </div>
 
   <script src="js/storage.js"></script>
-  <script src="js/notifications.js"></script>
   <script src="js/sync-service.js"></script>
+  <script src="js/notifications.js"></script>
   <script src="js/main.js"></script>
-  <!-- Simple Service Worker Registration for PWA -->
+  <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

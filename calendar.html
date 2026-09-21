@@ -5,8 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calendario - Casa Mocholí Chordà</title>
-  <link rel="stylesheet" href="css/style.css?v=1.18.1">
+  <link rel="stylesheet" href="css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4F46E5">
 </head>
 
 <body>
@@ -20,7 +23,10 @@
 
     <div class="calendar-header">
       <button id="prev-month" class="arrow-btn btn btn-secondary">←</button>
-      <h2 id="month-year"></h2>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <h2 id="month-year" style="margin: 0;"></h2>
+        <button id="today-btn" class="btn btn-sm btn-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.6rem;">Hoy</button>
+      </div>
       <button id="next-month" class="arrow-btn btn btn-secondary">→</button>
     </div>
 
@@ -52,7 +58,7 @@
     </div>
 
     <!-- Floating Action Button -->
-    <button id="add-event-btn" class="btn-floating">
+    <button id="add-event-btn" class="btn-floating" title="Nuevo Evento">
       +
     </button>
 
@@ -64,6 +70,14 @@
         <div class="form-group">
           <label class="form-label">Título</label>
           <input type="text" id="event-title" class="form-input" placeholder="Ej: Cumpleaños abuela">
+          <!-- Quick Presets -->
+          <div class="quick-presets">
+            <span class="preset-tag" data-emoji="🎂" data-color="#EC4899">🎂 Cumple</span>
+            <span class="preset-tag" data-emoji="🩺" data-color="#10B981">🩺 Médico</span>
+            <span class="preset-tag" data-emoji="📅" data-color="#4F46E5">📅 Cita</span>
+            <span class="preset-tag" data-emoji="🎉" data-color="#F59E0B">🎉 Fiesta</span>
+            <span class="preset-tag" data-emoji="🏠" data-color="#3B82F6">🏠 Casa</span>
+          </div>
         </div>
 
         <div class="form-row-2">
@@ -78,8 +92,8 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Color</label>
-          <input type="color" id="event-color" class="form-input" value="#4F46E5" style="height: 48px; padding: 4px;">
+          <label class="form-label">Color de Etiqueta</label>
+          <input type="color" id="event-color" class="form-input" value="#4F46E5" style="height: 44px; padding: 4px; cursor: pointer;">
         </div>
 
         <div class="form-group">
@@ -94,7 +108,7 @@
 
         <div class="form-group">
           <label class="form-label">Notas</label>
-          <textarea id="event-note" class="form-textarea" rows="3"></textarea>
+          <textarea id="event-note" class="form-textarea" rows="3" placeholder="Detalles, dirección o recordatorios..."></textarea>
         </div>
 
         <div class="modal-buttons">
@@ -103,8 +117,6 @@
         </div>
       </div>
     </div>
-  </div>
-
   </div>
 
   <script src="js/storage.js"></script>

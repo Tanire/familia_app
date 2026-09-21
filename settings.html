@@ -7,6 +7,9 @@
     <title>Ajustes - Casa Mocholí Chordà</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
 </head>
 
 <body>
@@ -19,106 +22,143 @@
         </div>
 
         <header class="home-header" style="margin-bottom: 2rem;">
-            <h2>Ajustes y Nube</h2>
-            <p style="color: var(--text-muted);">Estado del Sistema</p>
+            <h2>⚙️ Ajustes y Nube</h2>
+            <p style="color: var(--text-muted);">Configuración del Sistema</p>
         </header>
 
         <!-- 1. App State -->
-        <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--primary);">
-            <h3 style="margin-bottom: 0.5rem;">📱 Aplicación</h3>
+        <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+            <h3 style="margin-bottom: 1rem;">📱 Aplicación y Perfil</h3>
+            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
                     <div style="font-weight: 600;">Versión Instalada</div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem;">v1.22.3</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">v1.18.02</div>
                 </div>
                 <button onclick="window.location.reload()" class="btn btn-sm btn-secondary">
                     ⟳ Recargar
                 </button>
             </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label class="form-label">Tu Nombre (Perfil Activo)</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="user-profile-name" class="form-input" placeholder="Tu nombre...">
+                    <button id="save-profile-btn" class="btn btn-sm btn-primary" style="white-space: nowrap;">Guardar</button>
+                </div>
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
                     <div style="font-weight: 600;">Modo Oscuro</div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem;">Apariencia visual</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">Tema visual de la interfaz</div>
                 </div>
                 <label class="switch">
                     <input type="checkbox" id="theme-toggle">
                     <span class="slider round"></span>
                 </label>
             </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <div>
+                    <div style="font-weight: 600;">🔔 Notificaciones Web</div>
+                    <div id="notif-status-text" style="color: var(--text-muted); font-size: 0.85rem;">Avisos de eventos y citas de hoy</div>
+                </div>
+                <button id="enable-notif-btn" class="btn btn-sm btn-secondary">
+                    Activar
+                </button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
                     <div style="font-weight: 600;">Foto de Familia</div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem;">Cambia la imagen principal</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">Personaliza la imagen del inicio</div>
                 </div>
                 <div>
                     <input type="file" id="main-image-input" accept="image/*" style="display: none;">
                     <button class="btn btn-sm btn-secondary" onclick="document.getElementById('main-image-input').click()">
-                        Subir Imagen
+                        📷 Cambiar Foto
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- 2. Data State -->
-        <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--success);">
-            <h3 style="margin-bottom: 0.5rem;">☁️ Datos (Nube)</h3>
+        <!-- 2. Data State (Cloud) -->
+        <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
+            <h3 style="margin-bottom: 0.75rem;">☁️ Sincronización en la Nube</h3>
 
             <div id="sync-status-display"
-                style="background: #F3F4F6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
-                <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-main);">Comprobando...</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Gist ID: <span id="gist-id-display">...</span>
-                </div>
+                style="background: var(--bg-body); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; text-align: center; border: 1px solid var(--btn-secondary-border, #E5E7EB);">
+                <div style="font-weight: 600; font-size: 1.05rem; color: var(--text-main);">Comprobando...</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Gist ID: <span id="gist-id-display">...</span></div>
             </div>
 
-            <button id="manual-sync-btn" class="btn btn-primary" style="width: 100%; padding: 1rem;">
-                🔄 Sincronizar Ahora
+            <button id="manual-sync-btn" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+                🔄 Sincronizar Ahora con GitHub
             </button>
             <div id="sync-feedback"
-                style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.2em;"></div>
-        </div>
-
+                style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2em;"></div>
         </div>
 
         <!-- 3. Expenses Config -->
-        <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--accent);">
-            <h3 style="margin-bottom: 0.5rem;">💶 Configuración de Gastos</h3>
+        <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--accent);">
+            <h3 style="margin-bottom: 0.75rem;">💶 Configuración de Gastos</h3>
             
             <div class="form-group">
                 <label class="form-label">Presupuesto Mensual Global (€)</label>
                 <input type="number" id="monthly-budget" class="form-input" placeholder="Ej: 1500" step="10">
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Si lo dejas a 0, no se mostrará la barra de límite mensual.</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Si está en 0, no se mostrará la barra de límite mensual.</p>
             </div>
 
             <div style="margin-top: 1.5rem;">
                 <label class="form-label">Categorías de Gastos</label>
-                <div id="categories-list" style="background: var(--bg-body); border-radius: var(--radius-md); padding: 0.5rem; margin-bottom: 1rem; max-height: 200px; overflow-y: auto;">
+                <div id="categories-list" style="background: var(--bg-body); border-radius: var(--radius-md); padding: 0.5rem; margin-bottom: 1rem; max-height: 200px; overflow-y: auto; border: 1px solid var(--btn-secondary-border, #E5E7EB);">
                     <!-- Dynamically populated -->
                 </div>
                 
                 <div style="display: flex; gap: 0.5rem;">
-                    <input type="text" id="new-cat-icon" class="form-input" placeholder="Emoji" style="width: 60px; text-align: center;">
+                    <input type="text" id="new-cat-icon" class="form-input" placeholder="Emoji" style="width: 65px; text-align: center;">
                     <input type="text" id="new-cat-name" class="form-input" placeholder="Nueva Categoría" style="flex: 1;">
-                    <button id="add-cat-btn" class="btn btn-primary" style="padding: 0 1rem;">+</button>
+                    <button id="add-cat-btn" class="btn btn-primary" style="padding: 0 1.25rem;">+ Añadir</button>
                 </div>
             </div>
             
-            <button id="save-expenses-config-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1.5rem;">
+            <button id="save-expenses-config-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1.25rem;">
                 💾 Guardar Presupuesto y Categorías
             </button>
         </div>
 
-        <!-- 4. Advanced Config -->
+        <!-- 4. Backup & Restore (Local) -->
+        <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #8B5CF6;">
+            <h3 style="margin-bottom: 0.75rem;">💾 Copia de Seguridad Local</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Descarga o restaura un archivo JSON con todos los datos familiares (calendario, gastos, recetas, compras).
+            </p>
+            
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button id="export-backup-btn" class="btn btn-secondary" style="flex: 1; min-width: 140px;">
+                    📥 Descargar Copia
+                </button>
+                <input type="file" id="import-backup-input" accept=".json" style="display: none;">
+                <button id="import-backup-btn" class="btn btn-secondary" style="flex: 1; min-width: 140px;">
+                    📤 Restaurar Copia
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. Advanced Config (GitHub Credentials) -->
         <div class="card">
             <details>
-                <summary style="cursor: pointer; font-weight: 600; color: var(--text-muted); padding: 0.5rem 0;">⚙️
-                    Configuración de Conexión</summary>
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;">
-                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
-                        Credenciales de GitHub para la sincronización.
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-muted); padding: 0.5rem 0;">
+                    ⚙️ Credenciales de GitHub (Avanzado)
+                </summary>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--btn-secondary-border, #E5E7EB);">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        Token personal y Gist ID para la sincronización multi-dispositivo.
                     </p>
 
                     <div class="form-group">
-                        <label class="form-label">GitHub Token</label>
+                        <label class="form-label">GitHub Token (Personal Access Token)</label>
                         <input type="password" id="gh-token" class="form-input" placeholder="ghp_...">
                     </div>
 
@@ -138,6 +178,7 @@
 
     <script src="js/storage.js"></script>
     <script src="js/sync-service.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/main.js"></script>
 </body>
 

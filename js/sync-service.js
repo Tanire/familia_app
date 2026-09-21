@@ -31,7 +31,6 @@ const SyncService = {
     },
 
     async updateGist(token, gistId, dataContent) {
-        // If dataContent is provided, use it, otherwise use local data (legacy mode)
         const content = dataContent ? JSON.stringify(dataContent) : JSON.stringify(this.getAllLocalData());
 
         const data = {
@@ -68,65 +67,68 @@ const SyncService = {
             if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
             const json = await response.json();
             
-            if (!json.files["family_data.json"]) return null; // Or throw?
+            if (!json.files || !json.files["family_data.json"]) return null;
 
             const content = json.files["family_data.json"].content;
             return JSON.parse(content);
         } catch (e) {
             console.error("getGist Error:", e);
-            throw e; // Propagate error to syncWithCloud
+            throw e;
         }
     },
 
-    // ... (Data Management & Merge Logic Omitted for Brevity - kept same) ...
     getAllLocalData() {
         return {
+            version: '1.18.02',
             calendar_events: StorageService.getEvents(),
             expenses: StorageService.getExpenses(),
-            shopping_list: StorageService.get('shopping_list', []),
+            shopping_list: StorageService.getShoppingList(),
             recurring_bills: StorageService.getRecurringBills(),
             main_image: StorageService.getMainImage(),
-            // Phase 2
             expense_categories: StorageService.getCustomCategories(),
-            monthly_budget: { amount: StorageService.getMonthlyBudget(), updatedAt: localStorage.getItem('budget_updatedAt') || new Date().toISOString() },
-            // Phase 3
-            recipes: StorageService.get('recipes', []),
-            weekly_menu: StorageService.get('weekly_menu', [null, null, null, null, null, null, null])
+            monthly_budget: { 
+                amount: StorageService.getMonthlyBudget(), 
+                updatedAt: localStorage.getItem('budget_updatedAt') || new Date().toISOString() 
+            },
+            recipes: StorageService.getRecipes(),
+            weekly_menu: StorageService.getWeeklyMenu()
         };
     },
+
     restoreData(data) {
         if (data.calendar_events) StorageService.saveEvents(data.calendar_events, true);
         if (data.expenses) StorageService.saveExpenses(data.expenses, true);
-        if (data.shopping_list) StorageService.set('shopping_list', data.shopping_list, true);
+        if (data.shopping_list) StorageService.saveShoppingList(data.shopping_list, true);
         if (data.recurring_bills) StorageService.saveRecurringBills(data.recurring_bills, true);
         if (data.main_image) StorageService.saveMainImage(data.main_image, true);
-        
         if (data.expense_categories) StorageService.saveCustomCategories(data.expense_categories, true);
         if (data.monthly_budget && data.monthly_budget.amount !== undefined) {
              StorageService.saveMonthlyBudget(data.monthly_budget.amount, true);
-             localStorage.setItem('budget_updatedAt', data.monthly_budget.updatedAt);
+             if (data.monthly_budget.updatedAt) localStorage.setItem('budget_updatedAt', data.monthly_budget.updatedAt);
         }
-
-        // Phase 3
-        if (data.recipes) StorageService.set('recipes', data.recipes, true);
-        if (data.weekly_menu) StorageService.set('weekly_menu', data.weekly_menu, true);
+        if (data.recipes) StorageService.saveRecipes(data.recipes, true);
+        if (data.weekly_menu) StorageService.saveWeeklyMenu(data.weekly_menu, true);
     },
+
     mergeArrays(localArr, cloudArr) {
         // Map by ID to merge. "Last Write Wins" Strategy.
         const mergedMap = new Map();
         if (Array.isArray(cloudArr)) {
-            cloudArr.forEach(item => { if (item && item.id) mergedMap.set(item.id, item); });
+            cloudArr.forEach(item => { if (item && item.id) mergedMap.set(String(item.id), item); });
         }
         if (Array.isArray(localArr)) {
             localArr.forEach(localItem => {
                 if (localItem && localItem.id) {
-                    const cloudItem = mergedMap.get(localItem.id);
+                    const idStr = String(localItem.id);
+                    const cloudItem = mergedMap.get(idStr);
                     if (cloudItem) {
                         const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
                         const cloudTime = cloudItem.updatedAt ? new Date(cloudItem.updatedAt).getTime() : 0;
-                        if (localTime >= cloudTime) mergedMap.set(localItem.id, localItem);
+                        if (localTime >= cloudTime) {
+                            mergedMap.set(idStr, localItem);
+                        }
                     } else {
-                        mergedMap.set(localItem.id, localItem);
+                        mergedMap.set(idStr, localItem);
                     }
                 }
             });
@@ -141,21 +143,14 @@ const SyncService = {
             try {
                 cloudData = await this.getGist(token, gistId);
             } catch (e) {
-                // If 404, maybe we want to initialize? 
-                // But for now, let's treat it as error unless we specifically handle init.
-                // If it's 401, definitely error.
-                if (e.message.includes('404')) {
-                    // This implies Gist ID is wrong OR we need to init? 
-                    // UpdateGist might fail too if ID is wrong.
-                    // Let's try updateGist anyway?
-                    console.warn("Gist not found (404), attempting to overwrite/create if possible...");
+                if (e.message && e.message.includes('404')) {
+                    console.warn("Gist not found (404), intentando subir estado actual...");
                 } else {
                     return { success: false, error: e.message };
                 }
             }
 
             if (!cloudData) {
-                // No cloud data (or 404 handled)? Try upload local.
                 return await this.updateGist(token, gistId);
             }
 
@@ -167,32 +162,25 @@ const SyncService = {
             const cloudBudget = cloudData.monthly_budget || { amount: 0, updatedAt: '1970-01-01' };
             const mergedBudget = (new Date(localBudget.updatedAt).getTime() > new Date(cloudBudget.updatedAt).getTime()) ? localBudget : cloudBudget;
 
-            // Simple categories merge (assume local wins if it has changes, but mergeArrays with IDs is better if we add IDs/timestamps to categories)
-            // For categories, we will use mergeArrays and ensure categories have 'id' and 'updatedAt'.
             const mergedCategories = this.mergeArrays(localData.expense_categories, cloudData.expense_categories || []);
 
             const mergedData = {
+                version: '1.18.02',
                 calendar_events: this.mergeArrays(localData.calendar_events, cloudData.calendar_events),
                 expenses: this.mergeArrays(localData.expenses, cloudData.expenses),
                 shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list),
                 recurring_bills: this.mergeArrays(localData.recurring_bills, cloudData.recurring_bills),
-                main_image: localData.main_image || cloudData.main_image, // Very simple merge for image, should probably use timestamp, but local overwrite is OK for now if we trigger upload manually
+                main_image: localData.main_image || cloudData.main_image,
                 expense_categories: mergedCategories.length > 0 ? mergedCategories : localData.expense_categories,
                 monthly_budget: mergedBudget,
-                // Phase 3 Arrays
                 recipes: this.mergeArrays(localData.recipes, cloudData.recipes),
-                // Menu is a simple array of IDs, prefer local if it exists and changed, but it doesn't have updatedAt. 
-                // For simplicity, local wins just like categories.
                 weekly_menu: (!cloudData.weekly_menu || localData.weekly_menu.some(x => x !== null)) ? localData.weekly_menu : cloudData.weekly_menu
             };
 
             // 4. Update Local
-            const oldShoppingList = localData.shopping_list; 
             this.restoreData(mergedData);
 
-            // 5. Notifications (Skipped)
-
-            // 6. Update Cloud
+            // 5. Update Cloud
             return await this.updateGist(token, gistId, mergedData);
 
         } catch (e) {
@@ -200,4 +188,3 @@ const SyncService = {
         }
     }
 };
-

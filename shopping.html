@@ -7,72 +7,9 @@
     <title>Lista Compra - Casa Mocholí Chordà</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Estilos específicos inline por comodidad o mover a css global */
-        .shopping-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: white;
-            border-bottom: 1px solid #E5E7EB;
-            transition: all 0.2s;
-        }
-
-        .shopping-item:hover {
-            background: #F9FAFB;
-        }
-
-        .shopping-item.completed .item-name {
-            text-decoration: line-through;
-            color: var(--text-muted);
-        }
-
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            cursor: pointer;
-            flex-grow: 1;
-        }
-
-        .custom-checkbox {
-            width: 24px;
-            height: 24px;
-            border: 2px solid #D1D5DB;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .custom-checkbox.checked {
-            background: var(--secondary);
-            border-color: var(--secondary);
-        }
-
-        .custom-checkbox.checked::after {
-            content: '✔';
-            color: white;
-            font-size: 14px;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--danger);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0 0.5rem;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-    </style>
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
 </head>
 
 <body>
@@ -84,26 +21,43 @@
             </button>
         </div>
 
-        <header class="home-header" style="margin-bottom: 1rem;">
-            <h2>Lista de la Compra</h2>
-            <p style="color: var(--text-muted);">¿Qué falta en casa?</p>
+        <header class="home-header" style="margin-bottom: 1.5rem;">
+            <h2>🛒 Lista de la Compra</h2>
+            <p id="shopping-summary-text" style="color: var(--text-muted);">¿Qué falta en casa?</p>
         </header>
 
-        <div class="card">
-            <div class="input-group">
-                <input type="text" id="item-input" class="form-input" placeholder="Ej: Leche, Huevos...">
-                <button id="add-item-btn" class="btn btn-primary">+</button>
+        <!-- Category Filters -->
+        <div class="filter-pills" id="shopping-filter-pills">
+            <button class="filter-pill active" data-cat="all">Todas</button>
+            <button class="filter-pill" data-cat="supermarket">🛒 Super</button>
+            <button class="filter-pill" data-cat="fresh">🍎 Frescos</button>
+            <button class="filter-pill" data-cat="health">💊 Farmacia</button>
+            <button class="filter-pill" data-cat="home">🏠 Hogar</button>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <input type="text" id="item-input" class="form-input" placeholder="Ej: Leche, Huevos, Manzanas..." style="flex: 2; min-width: 160px;">
+                <select id="item-category" class="form-select" style="flex: 1; min-width: 120px;">
+                    <option value="supermarket">🛒 Super</option>
+                    <option value="fresh">🍎 Frescos</option>
+                    <option value="health">💊 Farmacia</option>
+                    <option value="home">🏠 Hogar</option>
+                    <option value="other">📦 Otros</option>
+                </select>
+                <button id="add-item-btn" class="btn btn-primary" style="padding: 0 1.25rem;">+ Añadir</button>
             </div>
 
-            <div id="shopping-list"
-                style="border: 1px solid #E5E7EB; border-radius: var(--radius-md); overflow: hidden;">
+            <div id="shopping-list" style="border: 1px solid var(--btn-secondary-border, #E5E7EB); border-radius: var(--radius-md); overflow: hidden; min-height: 100px;">
                 <!-- Items go here -->
             </div>
 
-            <div style="margin-top: 1rem; text-align: right;">
-                <button id="clear-completed-btn" class="btn btn-secondary"
-                    style="font-size: 0.85rem; padding: 0.5rem 1rem;">
-                    🗑 Limpiar completados
+            <div style="margin-top: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <button id="share-whatsapp-btn" class="btn btn-sm btn-whatsapp">
+                    📲 Enviar por WhatsApp
+                </button>
+                <button id="clear-completed-btn" class="btn btn-sm btn-secondary">
+                    🗑 Limpiar comprados
                 </button>
             </div>
         </div>
@@ -111,6 +65,8 @@
     </div>
 
     <script src="js/storage.js"></script>
+    <script src="js/sync-service.js"></script>
+    <script src="js/main.js"></script>
     <script src="js/shopping.js"></script>
 </body>
 

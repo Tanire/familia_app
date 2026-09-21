@@ -7,18 +7,21 @@
     <title>Recetas y Menú - Casa Mocholí Chordà</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
     <style>
         .view-toggle {
             display: flex;
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             justify-content: center;
         }
 
         .recipe-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            gap: 1.25rem;
         }
 
         .recipe-card {
@@ -28,11 +31,13 @@
             overflow: hidden;
             border: 1px solid var(--btn-secondary-border, #E5E7EB);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .recipe-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-3px);
             box-shadow: var(--shadow-md);
             border-color: var(--primary);
         }
@@ -43,29 +48,32 @@
             align-items: center;
             gap: 1rem;
             border-bottom: 1px solid var(--btn-secondary-border, #E5E7EB);
+            flex-grow: 1;
         }
 
         .recipe-icon {
-            font-size: 2rem;
+            font-size: 2.2rem;
+            line-height: 1;
         }
 
         .recipe-info h3 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-main);
         }
 
         .recipe-info p {
-            margin: 0;
+            margin: 0.2rem 0 0 0;
             font-size: 0.85rem;
             color: var(--text-muted);
         }
 
         .recipe-actions {
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 1rem;
             background: var(--bg-body);
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         /* Menu Grid */
@@ -80,6 +88,7 @@
             border-radius: var(--radius-md);
             padding: 1rem;
             box-shadow: var(--shadow-sm);
+            border: 1px solid var(--btn-secondary-border, #E5E7EB);
             border-top: 4px solid var(--primary);
         }
         
@@ -87,8 +96,19 @@
             font-weight: 700;
             margin-bottom: 0.5rem;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
+        }
+
+        .recipe-preview-box {
+            background: var(--bg-body);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--btn-secondary-border, #E5E7EB);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -102,9 +122,9 @@
             </button>
         </div>
 
-        <header class="home-header" style="margin-bottom: 2rem;">
-            <h2>Recetas y Menú</h2>
-            <p style="color: var(--text-muted);">Organiza las comidas de la semana</p>
+        <header class="home-header" style="margin-bottom: 1.5rem;">
+            <h2>🍲 Recetas y Menú</h2>
+            <p style="color: var(--text-muted);">Organiza las comidas de la familia</p>
         </header>
 
         <div class="view-toggle">
@@ -115,14 +135,14 @@
         <!-- RECIPES VIEW -->
         <div id="recipes-view">
             <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
-                <div style="flex: 1; min-width: 150px;">
-                    <input type="text" id="recipe-search-input" class="form-input" placeholder="🔍 ¿Qué tienes en la nevera? (ej: pollo) ...">
+                <div style="flex: 1; min-width: 180px;">
+                    <input type="text" id="recipe-search-input" class="form-input" placeholder="🔍 Buscar por nombre o ingrediente (ej: pollo)...">
                 </div>
-                <button id="btn-search-web" class="btn btn-secondary" style="white-space: nowrap; padding: 0.5rem 0.75rem;" title="Buscar recetas en Google con estos ingredientes">
-                    🌐 Web
+                <button id="btn-search-web" class="btn btn-secondary" style="white-space: nowrap; padding: 0.75rem 1rem;" title="Buscar recetas en Google con estos ingredientes">
+                    🌐 Buscar en Web
                 </button>
-                <button id="btn-add-recipe" class="btn btn-primary" style="white-space: nowrap; padding: 0.5rem 0.75rem;">
-                    + Nueva
+                <button id="btn-add-recipe" class="btn btn-primary" style="white-space: nowrap; padding: 0.75rem 1.25rem;">
+                    + Nueva Receta
                 </button>
             </div>
 
@@ -133,9 +153,9 @@
 
         <!-- MENU VIEW -->
         <div id="menu-view" class="hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="color: var(--text-main);">Planificación Semanal</h3>
-                <button id="btn-send-to-shopping" class="btn btn-secondary" style="border-color: var(--secondary); color: var(--secondary);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <h3 style="color: var(--text-main); margin: 0;">Planificación Semanal</h3>
+                <button id="btn-send-to-shopping" class="btn btn-secondary" style="border-color: var(--secondary); color: var(--secondary); font-weight: 600;">
                     🛒 Mover Ingredientes a la Compra
                 </button>
             </div>
@@ -147,14 +167,42 @@
 
     </div>
 
-    <!-- MODAL RECIPE -->
+    <!-- MODAL PREVIEW RECIPE -->
+    <div id="recipe-preview-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span id="preview-recipe-icon" style="font-size: 2.2rem;">🍲</span>
+                    <h2 id="preview-recipe-title" style="margin: 0; font-size: 1.4rem;"></h2>
+                </div>
+                <button id="close-preview-btn" class="delete-btn" style="font-size: 1.8rem;">×</button>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <strong style="color: var(--text-main); font-size: 0.95rem;">📋 Ingredientes:</strong>
+                <div id="preview-recipe-ingredients" class="recipe-preview-box"></div>
+            </div>
+
+            <div id="preview-steps-container" style="margin-bottom: 1.5rem;">
+                <strong style="color: var(--text-main); font-size: 0.95rem;">👩‍🍳 Preparación / Notas:</strong>
+                <div id="preview-recipe-steps" class="recipe-preview-box"></div>
+            </div>
+
+            <div class="modal-buttons" style="justify-content: space-between;">
+                <button id="preview-edit-btn" class="btn btn-secondary">✏️ Editar Receta</button>
+                <button id="preview-add-shopping-btn" class="btn btn-primary">🛒 Añadir Ingredientes a la Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT / NEW RECIPE -->
     <div id="recipe-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
-            <h2>Nueva Receta</h2>
+            <h2 id="recipe-modal-title">Nueva Receta</h2>
             <div class="form-group" style="display: flex; gap: 1rem;">
                 <div style="width: 80px;">
                     <label class="form-label">Icono</label>
-                    <input type="text" id="recipe-icon" class="form-input" placeholder="🍲" style="text-align: center;">
+                    <input type="text" id="recipe-icon" class="form-input" placeholder="🍲" style="text-align: center; font-size: 1.2rem;">
                 </div>
                 <div style="flex: 1;">
                     <label class="form-label">Nombre de la Receta</label>
@@ -164,12 +212,12 @@
 
             <div class="form-group">
                 <label class="form-label">Ingredientes (Uno por línea)</label>
-                <textarea id="recipe-ingredients" class="form-textarea" rows="4" placeholder="500g Macarrones&#10;1 Bote tomate frito&#10;Queso rallado..."></textarea>
+                <textarea id="recipe-ingredients" class="form-textarea" rows="5" placeholder="500g Macarrones&#10;1 Bote tomate frito&#10;Queso rallado..."></textarea>
             </div>
             
             <div class="form-group">
                 <label class="form-label">Pasos / Notas (Opcional)</label>
-                <textarea id="recipe-steps" class="form-textarea" rows="3" placeholder="Hervir la pasta 10 min..."></textarea>
+                <textarea id="recipe-steps" class="form-textarea" rows="4" placeholder="Hervir la pasta 10 min, mezclar con salsa y hornear..."></textarea>
             </div>
 
             <div class="modal-buttons">
@@ -187,7 +235,7 @@
             <div class="form-group">
                 <label class="form-label">Comida principal</label>
                 <select id="select-recipe-dropdown" class="form-select">
-                    <option value="">-- Ninguna --</option>
+                    <option value="">-- Ninguna / Comer fuera --</option>
                     <!-- Options injected -->
                 </select>
             </div>

@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const calendarGrid = document.getElementById("calendar-grid");
   const monthYear = document.getElementById("month-year");
+  const todayBtn = document.getElementById("today-btn");
   const addEventBtn = document.getElementById("add-event-btn");
   const addEventTodayBtn = document.getElementById("add-event-today-btn");
   const eventModal = document.getElementById("event-modal");
@@ -19,9 +20,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const eventColor = document.getElementById("event-color");
   const eventNote = document.getElementById("event-note");
   const eventRecurrence = document.getElementById("event-recurrence");
+  const presetTags = document.querySelectorAll(".preset-tag");
 
   let currentDate = new Date();
   let selectedDate = null;
+  let editingEventId = null;
+
+  // Preset click handler
+  presetTags.forEach(tag => {
+    tag.addEventListener("click", () => {
+      const emoji = tag.dataset.emoji || "";
+      const color = tag.dataset.color || "#4F46E5";
+      if (eventColor) eventColor.value = color;
+      if (eventTitle) {
+        let currentVal = eventTitle.value.trim();
+        // Avoid duplicating leading emoji
+        if (!currentVal.startsWith(emoji)) {
+          eventTitle.value = `${emoji} ${currentVal}`.trim();
+        }
+        eventTitle.focus();
+      }
+    });
+  });
 
   function renderCalendar() {
     calendarGrid.innerHTML = "";
@@ -29,18 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const month = currentDate.getMonth();
 
     const monthNames = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre",
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ];
     monthYear.textContent = `${monthNames[month]} ${year}`;
 
@@ -49,16 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const daysInMonth = lastDay.getDate();
 
     let startDay = firstDay.getDay() - 1;
-    if (startDay === -1) startDay = 6;
+    if (startDay === -1) startDay = 6; // Sunday -> 6
 
-    // --- Optimization: Pre-process Events ---
     const allEvents = StorageService.getEvents().filter((e) => !e._deleted);
-    const recurringBills = StorageService.getRecurringBills().filter(
-      (b) => !b._deleted,
-    );
+    const recurringBills = StorageService.getRecurringBills().filter((b) => !b._deleted);
 
-    // split into recurring and single-time
-    const singleEventsMap = new Map(); // "YYYY-MM-DD" -> [events]
+    // Split events
+    const singleEventsMap = new Map();
     const recurringEvents = [];
 
     allEvents.forEach((e) => {
@@ -75,15 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.classList.add("day");
-      emptyCell.style.opacity = "0.3";
+      emptyCell.style.opacity = "0.2";
       calendarGrid.appendChild(emptyCell);
     }
 
-    // Timezone Fix: Use local ISO string
     const nowLocal = new Date();
-    const todayStr = new Date(
-      nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000,
-    )
+    const todayStr = new Date(nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000)
       .toISOString()
       .split("T")[0];
 
@@ -91,8 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dayCell = document.createElement("div");
       dayCell.className = "day";
 
-      // Current Day Object
-      const dayDate = new Date(year, month, i); // Local time 00:00:00
+      const dayDate = new Date(year, month, i);
       const dateString = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
 
       if (dateString === todayStr) dayCell.classList.add("today");
@@ -103,17 +106,20 @@ document.addEventListener("DOMContentLoaded", () => {
       dayNumber.textContent = i;
       dayCell.appendChild(dayNumber);
 
-      // 1. Render Single Events (O(1) Lookup)
+      // Single Events
       if (singleEventsMap.has(dateString)) {
         singleEventsMap.get(dateString).forEach((event) => {
           renderEventChip(dayCell, event);
         });
       }
 
-      // 2. Render Recurring Events (Optimized Filter)
+      // Recurring Events
       recurringEvents.forEach((event) => {
         const eventStart = new Date(event.date);
-        if (dayDate < eventStart) return; // Not started yet
+        eventStart.setHours(0, 0, 0, 0);
+        dayDate.setHours(0, 0, 0, 0);
+
+        if (dayDate < eventStart) return;
 
         let shouldRender = false;
         if (event.recurrence === "weekly") {
@@ -124,8 +130,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (
             dayDate.getMonth() === eventStart.getMonth() &&
             dayDate.getDate() === eventStart.getDate()
-          )
+          ) {
             shouldRender = true;
+          }
         }
 
         if (shouldRender) {
@@ -133,12 +140,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // 3. Render Recurring Bills
+      // Recurring Bills
       recurringBills.forEach((bill) => {
         if (bill.day === i) {
           const chip = document.createElement("div");
           chip.className = "event-chip";
-          chip.style.backgroundColor = "#F59E0B"; // Orange
+          chip.style.backgroundColor = "#F59E0B";
           chip.textContent = `💶 ${bill.title}`;
           chip.dataset.isBill = "true";
           dayCell.appendChild(chip);
@@ -170,22 +177,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function showDayDetails(dateStr) {
     detailsPanel.classList.add("active");
 
-    // We need to use the RECURRENCE logic again to find what events are on this specific day
-    // Reuse logic? Or copy-paste for safety/simplicity now.
-
     const [y, m, d] = dateStr.split("-").map(Number);
     const viewDate = new Date(y, m - 1, d);
+    viewDate.setHours(0, 0, 0, 0);
 
-    // Filter Soft Deleted
     const allEvents = StorageService.getEvents().filter((e) => !e._deleted);
 
     const eventsOnDay = allEvents.filter((event) => {
       const eventStart = new Date(event.date);
+      eventStart.setHours(0, 0, 0, 0);
+
       if (!event.recurrence || event.recurrence === "none") {
         return event.date === dateStr;
       }
-
-      // Recurring Check
       if (viewDate < eventStart) return false;
 
       if (event.recurrence === "weekly") {
@@ -203,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return false;
     });
 
-    // Filter bills for this day
     const bills = StorageService.getRecurringBills().filter(
       (b) => b.day === d && !b._deleted,
     );
@@ -215,28 +218,27 @@ document.addEventListener("DOMContentLoaded", () => {
       day: "numeric",
     };
     detailsDate.textContent = viewDate.toLocaleDateString("es-ES", options);
-
     detailsList.innerHTML = "";
 
     if (eventsOnDay.length === 0 && bills.length === 0) {
-      detailsList.innerHTML = '<p class="text-muted">No hay eventos.</p>';
+      detailsList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No hay eventos ni notas para este día.</p>';
     }
 
-    // Render Bills First
+    // Render Bills
     bills.forEach((bill) => {
       const item = document.createElement("div");
       item.className = "detail-item";
       item.style.borderLeftColor = "#F59E0B";
-      item.style.background = "#FFFBEB"; // Light orange bg
+      item.style.background = "var(--bg-body)";
 
       item.innerHTML = `
-            <div class="detail-title">💶 ${bill.title}</div>
-            <span class="detail-time">Gasto Recurrente</span>
-            <div class="detail-note">Importe: ${bill.amount}€</div>
-            <button class="btn-pay-bill" data-id="${bill.id}" style="margin-top:0.5rem; width:100%; border:none; background:#F59E0B; color:white; padding:4px; border-radius:4px; cursor:pointer;">
-                💸 Pagar ahora
-            </button>
-          `;
+        <div class="detail-title">💶 ${escapeHtml(bill.title)}</div>
+        <span class="detail-time" style="color: #F59E0B; font-weight: 600;">Gasto Fijo Mensual</span>
+        <div class="detail-note" style="color: var(--text-main); font-weight: 600;">Importe: ${parseFloat(bill.amount).toFixed(2)}€</div>
+        <button class="btn-pay-bill" data-id="${bill.id}" style="margin-top:0.5rem; width:100%; border:none; background:#F59E0B; color:white; padding:6px; border-radius:6px; cursor:pointer; font-weight:600;">
+            💸 Apuntar en Gastos
+        </button>
+      `;
       detailsList.appendChild(item);
     });
 
@@ -247,112 +249,116 @@ document.addEventListener("DOMContentLoaded", () => {
       item.style.borderLeftColor = event.color || "#4F46E5";
 
       const isRecurring = event.recurrence && event.recurrence !== "none";
-      const recurrenceText = isRecurring ? `(Repite: ${event.recurrence})` : "";
+      const recurrenceLabels = {
+        weekly: "Semanal",
+        monthly: "Mensual",
+        yearly: "Anual"
+      };
+      const recurrenceText = isRecurring ? `(Repite: ${recurrenceLabels[event.recurrence] || event.recurrence})` : "";
 
       item.innerHTML = `
-            <div class="detail-title">${event.title} ${isRecurring ? "🔄" : ""}</div>
-            <span class="detail-time">${event.time || "Todo el día"} <small>${recurrenceText}</small></span>
-            ${event.note ? `<div class="detail-note">${event.note}</div>` : ""}
-            <div style="float:right; margin-top: -30px; display: flex; gap: 0.5rem;">
-                <button class="btn-edit-event" data-id="${event.id}" style="border:none; background:none; color:var(--primary); cursor:pointer;">✏️ Editar</button>
-                <button class="btn-delete-event" data-id="${event.id}" style="border:none; background:none; color:#EF4444; cursor:pointer;">Eliminar</button>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="detail-title">${escapeHtml(event.title)} ${isRecurring ? "🔄" : ""}</div>
+                <span class="detail-time" style="color: var(--text-muted);">${event.time ? '⏰ ' + event.time : "Todo el día"} <small>${recurrenceText}</small></span>
             </div>
-          `;
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-edit-event" data-id="${event.id}" style="border:none; background:none; color:var(--primary); cursor:pointer; font-size:0.9rem;" title="Editar">✏️</button>
+                <button class="btn-delete-event" data-id="${event.id}" style="border:none; background:none; color:#EF4444; cursor:pointer; font-size:0.9rem;" title="Eliminar">🗑</button>
+            </div>
+        </div>
+        ${event.note ? `<div class="detail-note" style="margin-top: 0.5rem; color: var(--text-muted);">${escapeHtml(event.note)}</div>` : ""}
+      `;
       detailsList.appendChild(item);
     });
 
     // Listeners
-    document.querySelectorAll(".btn-delete-event").forEach((btn) => {
+    detailsList.querySelectorAll(".btn-delete-event").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        deleteEvent(e.target.dataset.id);
+        deleteEvent(btn.dataset.id);
       });
     });
 
-    document.querySelectorAll(".btn-edit-event").forEach((btn) => {
+    detailsList.querySelectorAll(".btn-edit-event").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        editEvent(e.target.dataset.id);
+        editEvent(btn.dataset.id);
       });
     });
 
-    document.querySelectorAll(".btn-pay-bill").forEach((btn) => {
+    detailsList.querySelectorAll(".btn-pay-bill").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        payBill(e.target.dataset.id, dateStr);
+        payBill(btn.dataset.id, dateStr);
       });
     });
 
     addEventTodayBtn.onclick = () => openModal(dateStr);
   }
 
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function payBill(billId, dateStr) {
-    if (!confirm("¿Confirmar pago de este recibo? Se añadirá a tus gastos."))
-      return;
-
     const bills = StorageService.getRecurringBills();
-    const bill = bills.find((b) => b.id === billId);
+    const bill = bills.find((b) => String(b.id) === String(billId));
 
-    if (bill) {
-      // Add to Expenses
-      const newExpense = {
-        id: Date.now().toString(),
-        title: bill.title, // Maybe append Month name?
-        amount: bill.amount,
-        category: bill.category,
-        date: new Date().toISOString(), // Or use the bill date? dateStr is better?
-        // expense date field is ISO. Let's use current time but on that date? Or just NOW.
-        // Logic: user confirms payment NOW.
-        createdBy: localStorage.getItem("user_profile") || "",
-      };
+    if (!bill) return;
+    if (!confirm(`¿Confirmar pago de "${bill.title}" (${bill.amount}€)? Se registrará en tus gastos.`)) return;
 
-      const expenses = StorageService.getExpenses();
-      expenses.push(newExpense);
-      StorageService.saveExpenses(expenses);
-      StorageService.triggerAutoSync(); // MANUAL SYNC
-      alert("¡Gasto añadido y guardado!");
-    }
+    const newExpense = {
+      id: Date.now().toString(),
+      title: bill.title,
+      amount: bill.amount,
+      category: bill.category || "home",
+      type: "expense",
+      date: new Date().toISOString(),
+      createdBy: localStorage.getItem("user_profile") || "",
+      _deleted: false,
+      updatedAt: new Date().toISOString()
+    };
+
+    const expenses = StorageService.getExpenses();
+    expenses.push(newExpense);
+    StorageService.saveExpenses(expenses);
+    StorageService.triggerAutoSync();
+    alert("¡Gasto registrado y sincronizado!");
   }
 
   function deleteEvent(id) {
-    if (
-      confirm(
-        "¿Borrar este evento? (Si es recurrente, desaparecerá de todos los días)",
-      )
-    ) {
+    if (confirm("¿Borrar este evento? (Si es recurrente, desaparecerá de todas las fechas)")) {
       let events = StorageService.getEvents();
-      // SOFT DELETE
-      const idx = events.findIndex((e) => e.id === id);
+      const idx = events.findIndex((e) => String(e.id) === String(id));
       if (idx !== -1) {
         events[idx]._deleted = true;
+        events[idx].updatedAt = new Date().toISOString();
         StorageService.saveEvents(events);
-        StorageService.triggerAutoSync(); // MANUAL SYNC
+        StorageService.triggerAutoSync();
         renderCalendar();
         if (selectedDate) showDayDetails(selectedDate);
       }
     }
   }
 
-  let editingEventId = null; // Track if we are editing
-
   function editEvent(id) {
     const events = StorageService.getEvents();
-    const event = events.find(e => e.id === id);
+    const event = events.find((e) => String(e.id) === String(id));
     if (!event) return;
 
-    editingEventId = id; // Set state
-    openModal(); // Open UI
-    
-    // Populate fields
+    editingEventId = id;
+    openModal();
+
     if (eventTitle) eventTitle.value = event.title;
     if (eventDate) eventDate.value = event.date;
-    if (eventTime) eventTime.value = event.time || '';
-    if (eventColor) eventColor.value = event.color || '#4F46E5';
-    if (eventNote) eventNote.value = event.note || '';
-    if (eventRecurrence) eventRecurrence.value = event.recurrence || 'none';
-    
-    // Change modal title visually
-    const modalTitle = eventModal.querySelector('h2');
+    if (eventTime) eventTime.value = event.time || "";
+    if (eventColor) eventColor.value = event.color || "#4F46E5";
+    if (eventNote) eventNote.value = event.note || "";
+    if (eventRecurrence) eventRecurrence.value = event.recurrence || "none";
+
+    const modalTitle = eventModal.querySelector("h2");
     if (modalTitle) modalTitle.textContent = "Editar Evento";
   }
 
@@ -360,39 +366,35 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!eventModal) return;
     eventModal.classList.remove("hidden");
 
-    const modalTitle = eventModal.querySelector('h2');
+    const modalTitle = eventModal.querySelector("h2");
     if (modalTitle) modalTitle.textContent = "Nuevo Evento";
 
     if (!editingEventId) {
-       // Reset fields ONLY if not editing (editEvent populates before openModal finishes rendering visually)
-        if (eventTitle) eventTitle.value = '';
-        if (eventTime) eventTime.value = '';
-        if (eventNote) eventNote.value = '';
-        if (eventColor) eventColor.value = '#4F46E5';
-        if (eventRecurrence) eventRecurrence.value = 'none';
+      if (eventTitle) eventTitle.value = "";
+      if (eventTime) eventTime.value = "";
+      if (eventNote) eventNote.value = "";
+      if (eventColor) eventColor.value = "#4F46E5";
+      if (eventRecurrence) eventRecurrence.value = "none";
 
-        if (prefillDate && eventDate) {
-          eventDate.value = prefillDate;
-        } else if (eventDate) {
-          // Use local date for default
-          const now = new Date();
-          const localISO = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-          eventDate.value = localISO;
-        }
+      if (prefillDate && eventDate) {
+        eventDate.value = prefillDate;
+      } else if (eventDate) {
+        const now = new Date();
+        const localISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+          .toISOString()
+          .split("T")[0];
+        eventDate.value = localISO;
+      }
     }
   }
 
   function closeModal() {
     if (eventModal) eventModal.classList.add("hidden");
-    editingEventId = null; // Reset edit state on close
+    editingEventId = null;
   }
 
   function saveEvent() {
-    // Robust checks
-    if (!eventTitle || !eventDate) {
-      console.error("Missing input elements");
-      return;
-    }
+    if (!eventTitle || !eventDate) return;
 
     const title = eventTitle.value.trim();
     const date = eventDate.value;
@@ -414,40 +416,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const events = StorageService.getEvents();
 
       if (editingEventId) {
-        // UPDATE EXISTING
-        const idx = events.findIndex(e => e.id === editingEventId);
+        const idx = events.findIndex((e) => String(e.id) === String(editingEventId));
         if (idx !== -1) {
-            events[idx].title = title;
-            events[idx].date = date;
-            events[idx].time = time;
-            events[idx].color = color;
-            events[idx].note = note;
-            events[idx].recurrence = recurrence;
-            events[idx].updatedAt = new Date().toISOString(); // Timestamp for Last Write Wins
+          events[idx].title = title;
+          events[idx].date = date;
+          events[idx].time = time;
+          events[idx].color = color;
+          events[idx].note = note;
+          events[idx].recurrence = recurrence;
+          events[idx].updatedAt = new Date().toISOString();
         }
       } else {
-        // CREATE NEW
         const newEvent = {
-            id: Date.now().toString(),
-            title,
-            date,
-            time,
-            color,
-            note,
-            recurrence,
-            createdBy: localStorage.getItem('user_profile') || 'Anónimo',
-            _deleted: false,
-            updatedAt: new Date().toISOString()
+          id: Date.now().toString() + Math.floor(Math.random() * 1000),
+          title,
+          date,
+          time,
+          color,
+          note,
+          recurrence,
+          createdBy: localStorage.getItem("user_profile") || "Familia",
+          _deleted: false,
+          updatedAt: new Date().toISOString(),
         };
         events.push(newEvent);
       }
 
       StorageService.saveEvents(events);
-
-      // Manual Sync trigger
-      if (typeof StorageService.triggerAutoSync === "function") {
-        StorageService.triggerAutoSync();
-      }
+      StorageService.triggerAutoSync();
 
       closeModal();
       renderCalendar();
@@ -472,6 +468,18 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCalendar();
   });
 
+  if (todayBtn) {
+    todayBtn.addEventListener("click", () => {
+      currentDate = new Date();
+      const nowLocal = new Date();
+      selectedDate = new Date(nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      renderCalendar();
+      showDayDetails(selectedDate);
+    });
+  }
+
   addEventBtn.addEventListener("click", () => openModal());
   cancelEventBtn.addEventListener("click", closeModal);
   saveEventBtn.addEventListener("click", saveEvent);
@@ -480,9 +488,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === eventModal) closeModal();
   });
 
-  renderCalendar();
+  // Select Today by default
+  const now = new Date();
+  selectedDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0];
 
-  // Auto-refresh logic without reload (INSIDE SCOPE)
+  renderCalendar();
+  showDayDetails(selectedDate);
+
   window.addEventListener("storage-updated", () => {
     renderCalendar();
     if (selectedDate) showDayDetails(selectedDate);

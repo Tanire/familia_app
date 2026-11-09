@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalExpenseEl = document.getElementById('total-expense');
     const totalBalanceEl = document.getElementById('total-balance');
 
+    // Person Inputs & Elements
+    const paidByInput = document.getElementById('expense-paid-by');
+    const addPersonQuickBtn = document.getElementById('btn-add-person-quick');
+    const personBreakdownCard = document.getElementById('person-breakdown-card');
+    const personStatsList = document.getElementById('person-stats-list');
+    const activePersonBadge = document.getElementById('active-person-filter-badge');
+    const activePersonName = document.getElementById('active-person-filter-name');
+
     // Lists & Views
     const expensesList = document.getElementById('expenses-list');
     const recurringList = document.getElementById('recurring-list');
@@ -38,9 +46,69 @@ document.addEventListener('DOMContentLoaded', () => {
     // Navigation State
     let currentDate = new Date();
     let currentCategoryFilter = 'all';
+    let currentPersonFilter = 'all';
 
-    // --- Dynamic Categories ---
+    // --- Dynamic Categories & Family Members ---
     let customCategories = StorageService.getCustomCategories();
+    
+    function populatePaidBySelect() {
+        if (!paidByInput) return;
+        const members = StorageService.getFamilyMembers();
+        const activeUser = localStorage.getItem('user_profile') || '';
+        const prevValue = paidByInput.value;
+
+        paidByInput.innerHTML = '';
+        members.forEach(member => {
+            const opt = document.createElement('option');
+            opt.value = member;
+            opt.textContent = `👤 ${member}`;
+            paidByInput.appendChild(opt);
+        });
+
+        if (prevValue && members.includes(prevValue)) {
+            paidByInput.value = prevValue;
+        } else if (activeUser && members.includes(activeUser)) {
+            paidByInput.value = activeUser;
+        } else if (members.length > 0) {
+            paidByInput.value = members[0];
+        }
+    }
+
+    if (addPersonQuickBtn) {
+        addPersonQuickBtn.addEventListener('click', () => {
+            const name = prompt('Nombre del nuevo miembro de la familia:');
+            if (name && name.trim()) {
+                const trimmed = name.trim();
+                let members = StorageService.getFamilyMembers();
+                if (!members.includes(trimmed)) {
+                    members.push(trimmed);
+                    StorageService.saveFamilyMembers(members);
+                    StorageService.triggerAutoSync();
+                }
+                populatePaidBySelect();
+                if (paidByInput) paidByInput.value = trimmed;
+                renderExpenses();
+            }
+        });
+    }
+
+    if (activePersonBadge) {
+        activePersonBadge.addEventListener('click', () => {
+            currentPersonFilter = 'all';
+            updatePersonFilterBadge();
+            renderExpenses();
+        });
+    }
+
+    function updatePersonFilterBadge() {
+        if (!activePersonBadge) return;
+        if (currentPersonFilter !== 'all') {
+            activePersonBadge.style.display = 'inline-block';
+            if (activePersonName) activePersonName.textContent = currentPersonFilter;
+        } else {
+            activePersonBadge.style.display = 'none';
+        }
+    }
     
     function populateCategorySelect() {
         customCategories = StorageService.getCustomCategories();
@@ -105,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     populateCategorySelect();
+    populatePaidBySelect();
 
     // --- UI Toggles ---
     if (isRecurringCheck) {
@@ -171,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const category = categoryInput ? categoryInput.value : 'other';
         const isRecurring = isRecurringCheck ? isRecurringCheck.checked : false;
         const type = typeInput ? typeInput.value : 'expense';
+        const paidBy = (paidByInput && paidByInput.value.trim()) ? paidByInput.value.trim() : (localStorage.getItem('user_profile') || 'Familia');
         let movementDate = new Date().toISOString();
 
         if (dateInput && dateInput.value) {
@@ -199,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 amount,
                 category,
                 day,
+                createdBy: paidBy,
                 _deleted: false,
                 updatedAt: new Date().toISOString()
             });
@@ -215,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 category,
                 type: type,
                 date: movementDate,
-                createdBy: localStorage.getItem('user_profile') || '',
+                createdBy: paidBy,
                 items: currentScannedItems || [],
                 _deleted: false,
                 updatedAt: new Date().toISOString()
@@ -323,19 +394,91 @@ document.addEventListener('DOMContentLoaded', () => {
             return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
         });
 
-        // Stats Calculation on ALL movements of the month
+        // Stats Calculation on ALL movements of the month + per-person breakdown
         let income = 0;
         let expense = 0;
+        const personExpenseMap = {};
+
         currentMonthMovements.forEach(mov => {
             const val = parseFloat(mov.amount) || 0;
-            if (mov.type === 'income') income += val;
-            else expense += val;
+            const person = (mov.createdBy && mov.createdBy.trim()) ? mov.createdBy.trim() : 'Familia';
+            if (mov.type === 'income') {
+                income += val;
+            } else {
+                expense += val;
+                personExpenseMap[person] = (personExpenseMap[person] || 0) + val;
+            }
         });
 
-        // Filter for display by Category
+        // Render Person Breakdown Card
+        if (personStatsList) {
+            personStatsList.innerHTML = '';
+            const allConfiguredMembers = StorageService.getFamilyMembers();
+            const allPeopleSet = new Set([...allConfiguredMembers, ...Object.keys(personExpenseMap)]);
+            const peopleArray = Array.from(allPeopleSet);
+
+            const personColors = ['#4F46E5', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#3B82F6', '#14B8A6'];
+
+            if (peopleArray.length === 0) {
+                personStatsList.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 0.5rem;">Sin personas configuradas.</div>';
+            } else {
+                peopleArray.forEach((name, idx) => {
+                    const spent = personExpenseMap[name] || 0;
+                    const pct = expense > 0 ? Math.round((spent / expense) * 100) : 0;
+                    const color = personColors[idx % personColors.length];
+                    const isSelected = currentPersonFilter === name;
+
+                    const row = document.createElement('div');
+                    row.style.background = isSelected ? 'rgba(79, 70, 229, 0.12)' : 'var(--bg-body)';
+                    row.style.border = isSelected ? '2px solid var(--primary)' : '1px solid var(--btn-secondary-border, #E5E7EB)';
+                    row.style.padding = '0.6rem 0.75rem';
+                    row.style.borderRadius = 'var(--radius-md)';
+                    row.style.cursor = 'pointer';
+                    row.style.transition = 'all 0.2s';
+                    row.title = `Clic para filtrar los gastos de ${name}`;
+
+                    row.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-main);">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: ${color}; color: white; font-size: 0.75rem; font-weight: 700;">
+                                    ${name.charAt(0).toUpperCase()}
+                                </span>
+                                <span>${escapeHtml(name)}</span>
+                                ${isSelected ? '<span style="font-size: 0.75rem; color: var(--primary); font-weight: 700;">(Filtrado)</span>' : ''}
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">${spent.toFixed(2)} €</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 4px;">(${pct}%)</span>
+                            </div>
+                        </div>
+                        <div style="width: 100%; height: 6px; background: rgba(0,0,0,0.06); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background: ${color}; border-radius: 3px; transition: width 0.4s ease;"></div>
+                        </div>
+                    `;
+
+                    row.onclick = () => {
+                        if (currentPersonFilter === name) {
+                            currentPersonFilter = 'all';
+                        } else {
+                            currentPersonFilter = name;
+                        }
+                        updatePersonFilterBadge();
+                        renderExpenses();
+                    };
+
+                    personStatsList.appendChild(row);
+                });
+            }
+        }
+        updatePersonFilterBadge();
+
+        // Filter for display by Category & Person
         let displayMovements = currentMonthMovements;
         if (currentCategoryFilter !== 'all') {
             displayMovements = displayMovements.filter(e => (e.category || 'other') === currentCategoryFilter);
+        }
+        if (currentPersonFilter !== 'all') {
+            displayMovements = displayMovements.filter(e => (e.createdBy || 'Familia') === currentPersonFilter);
         }
 
         // Sort descending
@@ -344,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
         expensesList.innerHTML = '';
 
         if (displayMovements.length === 0) {
-            expensesList.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No hay movimientos registrados este mes para esta categoría.</div>';
+            expensesList.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No hay movimientos registrados para este filtro.</div>';
         } else {
             const fragment = document.createDocumentFragment();
             displayMovements.forEach((mov) => {
@@ -365,11 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-size: 1.5rem; margin-right: 0.75rem;">${catInfo.icon}</div>
                         <div style="flex-grow: 1; overflow: hidden;">
                             <div style="font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(mov.title)}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
                                 <span style="background: var(--bg-body); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--btn-secondary-border, #E5E7EB); color: var(--text-main);">${catInfo.name}</span>
-                                • ${dateStr}
-                                ${mov.createdBy ? `• <small>${escapeHtml(mov.createdBy)}</small>` : ''}
-                                ${mov.items && mov.items.length > 0 ? `• <small style="color:var(--primary);">📄 Ticket (${mov.items.length})</small>` : ''}
+                                • <span>${dateStr}</span>
+                                <span style="background: rgba(79, 70, 229, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">👤 ${escapeHtml(mov.createdBy || 'Familia')}</span>
+                                ${mov.items && mov.items.length > 0 ? `<small style="color:var(--primary);">📄 Ticket (${mov.items.length})</small>` : ''}
                             </div>
                         </div>
                         <div class="amount" style="margin-right: 0.75rem; font-weight: 700; font-size: 1.05rem; white-space: nowrap; color: ${isIncome ? 'var(--secondary)' : 'inherit'}">
@@ -569,6 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let inc = 0, exp = 0;
             const catMap = {};
+            const personMap = {};
 
             monthMovements.forEach(m => {
                 const val = parseFloat(m.amount) || 0;
@@ -577,6 +721,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     exp += val;
                     catMap[m.category] = (catMap[m.category] || 0) + val;
+                    const p = (m.createdBy && m.createdBy.trim()) ? m.createdBy.trim() : 'Familia';
+                    personMap[p] = (personMap[p] || 0) + val;
                 }
             });
 
@@ -585,8 +731,17 @@ document.addEventListener('DOMContentLoaded', () => {
             msg += `📉 *Gastos:* -${exp.toFixed(2)}€\n`;
             msg += `💶 *Balance:* ${(inc - exp).toFixed(2)}€\n\n`;
 
+            if (Object.keys(personMap).length > 0) {
+                msg += `👥 *Gastos por persona:*\n`;
+                Object.entries(personMap).sort((a, b) => b[1] - a[1]).forEach(([pName, amount]) => {
+                    const pct = exp > 0 ? Math.round((amount / exp) * 100) : 0;
+                    msg += `• ${pName}: ${amount.toFixed(2)}€ (${pct}%)\n`;
+                });
+                msg += `\n`;
+            }
+
             if (Object.keys(catMap).length > 0) {
-                msg += `*Principales categorías de gasto:*\n`;
+                msg += `🏷️ *Principales categorías de gasto:*\n`;
                 Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5).forEach(([catId, amount]) => {
                     const catInfo = getCategoryInfo(catId);
                     msg += `• ${catInfo.icon} ${catInfo.name}: ${amount.toFixed(2)}€\n`;
@@ -621,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('storage-updated', () => {
         populateCategorySelect();
+        populatePaidBySelect();
         renderExpenses();
         renderRecurring();
     });

@@ -90,6 +90,7 @@ const SyncService = {
                 amount: StorageService.getMonthlyBudget(), 
                 updatedAt: localStorage.getItem('budget_updatedAt') || new Date().toISOString() 
             },
+            family_members: StorageService.getFamilyMembers(),
             recipes: StorageService.getRecipes(),
             weekly_menu: StorageService.getWeeklyMenu()
         };
@@ -108,6 +109,7 @@ const SyncService = {
         }
         if (data.recipes) StorageService.saveRecipes(data.recipes, true);
         if (data.weekly_menu) StorageService.saveWeeklyMenu(data.weekly_menu, true);
+        if (data.family_members) StorageService.saveFamilyMembers(data.family_members, true);
     },
 
     mergeArrays(localArr, cloudArr) {
@@ -173,6 +175,7 @@ const SyncService = {
                 main_image: localData.main_image || cloudData.main_image,
                 expense_categories: mergedCategories.length > 0 ? mergedCategories : localData.expense_categories,
                 monthly_budget: mergedBudget,
+                family_members: Array.from(new Set([...(localData.family_members || []), ...(cloudData.family_members || [])])),
                 recipes: this.mergeArrays(localData.recipes, cloudData.recipes),
                 weekly_menu: (!cloudData.weekly_menu || localData.weekly_menu.some(x => x !== null)) ? localData.weekly_menu : cloudData.weekly_menu
             };

@@ -213,10 +213,91 @@ document.addEventListener('DOMContentLoaded', () => {
               const name = profileNameInput.value.trim();
               if (name) {
                   localStorage.setItem('user_profile', name);
+                  let members = StorageService.getFamilyMembers();
+                  if (!members.includes(name)) {
+                      members.push(name);
+                      StorageService.saveFamilyMembers(members);
+                  }
                   alert('Nombre de usuario actualizado.');
               }
           });
       }
+  }
+
+  // Family Members Management in Settings
+  const membersListEl = document.getElementById('family-members-list');
+  const newMemberInput = document.getElementById('new-member-name');
+  const addMemberBtn = document.getElementById('add-member-btn');
+
+  if (membersListEl && typeof StorageService !== 'undefined') {
+      let members = StorageService.getFamilyMembers();
+
+      function escapeHtml(str) {
+          if (!str) return '';
+          return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function renderFamilyMembers() {
+          membersListEl.innerHTML = '';
+          if (members.length === 0) {
+              membersListEl.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 0.5rem;">No hay miembros registrados.</div>';
+              return;
+          }
+          const fragment = document.createDocumentFragment();
+          members.forEach((m, idx) => {
+              const div = document.createElement('div');
+              div.style.display = 'flex';
+              div.style.justifyContent = 'space-between';
+              div.style.alignItems = 'center';
+              div.style.padding = '0.4rem 0.5rem';
+              div.style.borderBottom = '1px solid var(--btn-secondary-border, #E5E7EB)';
+              div.innerHTML = `
+                  <span style="font-weight: 500; font-size: 0.9rem;">👤 ${escapeHtml(m)}</span>
+                  <button class="btn-del-member" data-index="${idx}" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0 0.5rem;" title="Eliminar">✕</button>
+              `;
+              fragment.appendChild(div);
+          });
+          membersListEl.appendChild(fragment);
+      }
+
+      membersListEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('.btn-del-member');
+          if (btn) {
+              const idx = parseInt(btn.dataset.index);
+              const nameToDelete = members[idx];
+              if (members.length <= 1) {
+                  alert('Debe haber al menos 1 miembro en la familia.');
+                  return;
+              }
+              if (confirm(`¿Eliminar a "${nameToDelete}" de la lista de miembros?`)) {
+                  members.splice(idx, 1);
+                  StorageService.saveFamilyMembers(members);
+                  StorageService.triggerAutoSync();
+                  renderFamilyMembers();
+              }
+          }
+      });
+
+      if (addMemberBtn && newMemberInput) {
+          addMemberBtn.addEventListener('click', () => {
+              const name = newMemberInput.value.trim();
+              if (!name) return;
+              if (members.includes(name)) {
+                  alert('Este miembro ya está en la lista.');
+                  return;
+              }
+              members.push(name);
+              StorageService.saveFamilyMembers(members);
+              StorageService.triggerAutoSync();
+              newMemberInput.value = '';
+              renderFamilyMembers();
+          });
+          newMemberInput.addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') addMemberBtn.click();
+          });
+      }
+
+      renderFamilyMembers();
   }
 
   // Notifications Enable Button

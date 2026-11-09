@@ -96,6 +96,27 @@ const StorageService = {
   getMonthlyBudget() { return this.get('monthly_budget', 0); },
   saveMonthlyBudget(budget, suppress = false) { this.set('monthly_budget', budget, suppress); },
 
+  // --- Family Members Helpers ---
+  getFamilyMembers() {
+    let members = this.get('family_members', null);
+    if (!members || !Array.isArray(members) || members.length === 0) {
+      const activeUser = localStorage.getItem('user_profile');
+      members = activeUser ? [activeUser] : ['Papá', 'Mamá'];
+      // Also collect any createdBy found in existing expenses
+      const expenses = this.getExpenses();
+      expenses.forEach(e => {
+        if (e.createdBy && !members.includes(e.createdBy)) {
+          members.push(e.createdBy);
+        }
+      });
+      this.saveFamilyMembers(members, true);
+    }
+    return members;
+  },
+  saveFamilyMembers(members, suppress = false) {
+    this.set('family_members', members, suppress);
+  },
+
   // --- Shopping List Helpers (Normalizado: completed / checked) ---
   getShoppingList() { 
     const items = this.get('shopping_list', []);
@@ -129,6 +150,7 @@ const StorageService = {
       weekly_menu: this.getWeeklyMenu(),
       expense_categories: this.getCustomCategories(),
       monthly_budget: this.getMonthlyBudget(),
+      family_members: this.getFamilyMembers(),
       app_main_image: this.getMainImage()
     };
     return JSON.stringify(backupData, null, 2);
@@ -146,6 +168,7 @@ const StorageService = {
       if (data.recipes) this.saveRecipes(data.recipes, true);
       if (data.weekly_menu) this.saveWeeklyMenu(data.weekly_menu, true);
       if (data.expense_categories) this.saveCustomCategories(data.expense_categories, true);
+      if (data.family_members) this.saveFamilyMembers(data.family_members, true);
       if (data.monthly_budget !== undefined) this.saveMonthlyBudget(data.monthly_budget, true);
       if (data.app_main_image) this.saveMainImage(data.app_main_image, true);
       if (data.user_profile) localStorage.setItem('user_profile', data.user_profile);

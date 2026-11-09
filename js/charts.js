@@ -1,6 +1,7 @@
 
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
+let personChartInstance = null;
 
 window.initCharts = function () {
     // Initial setup if needed
@@ -77,6 +78,48 @@ window.renderCharts = function (targetDate) {
             }
         }
     });
+
+    // --- 1.2 Person Chart (Doughnut) for Target Month ---
+    const personChartEl = document.getElementById('personChart');
+    if (personChartEl) {
+        const personTotals = {};
+        monthExpenses.forEach(e => {
+            const p = (e.createdBy && e.createdBy.trim()) ? e.createdBy.trim() : 'Familia';
+            if (!personTotals[p]) personTotals[p] = 0;
+            personTotals[p] += parseFloat(e.amount);
+        });
+
+        const people = Object.keys(personTotals);
+        const personDataValues = Object.values(personTotals);
+        const ctxPerson = personChartEl.getContext('2d');
+
+        if (personChartInstance) {
+            personChartInstance.destroy();
+        }
+
+        personChartInstance = new Chart(ctxPerson, {
+            type: 'doughnut',
+            data: {
+                labels: people.map(p => `👤 ${p}`),
+                datasets: [{
+                    data: personDataValues,
+                    backgroundColor: [
+                        '#4F46E5', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#3B82F6', '#14B8A6'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
 
 
     // --- 2. Monthly Evolution (Bar Chart) - Last 6 Months ---

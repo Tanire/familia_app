@@ -1,7 +1,7 @@
 
 [Setup]
 AppName=Casa Mocholi Chorda
-AppVersion=1.18.02
+AppVersion=1.22.4
 DefaultDirName={autopf}\AppFamilia
 DefaultGroupName=Casa Mocholi Chorda
 OutputBaseFilename=Instalar_AppFamilia

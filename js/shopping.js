@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sort: pending first, completed at the bottom
         items.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
 
+        const fragment = document.createDocumentFragment();
         items.forEach((item) => {
             const cat = CATEGORY_MAP[item.category] || CATEGORY_MAP['other'];
             const div = document.createElement('div');
@@ -68,20 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <button class="delete-btn" data-id="${item.id}" title="Eliminar">×</button>
             `;
-            shoppingList.appendChild(div);
+            fragment.appendChild(div);
         });
-
-        // Event listeners for items
-        shoppingList.querySelectorAll('.checkbox-container').forEach(el => {
-            el.addEventListener('click', () => toggleItem(el.dataset.id));
-        });
-
-        shoppingList.querySelectorAll('.delete-btn').forEach(el => {
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteItem(el.dataset.id);
-            });
-        });
+        shoppingList.appendChild(fragment);
     }
 
     function escapeHtml(str) {
@@ -193,6 +183,21 @@ document.addEventListener('DOMContentLoaded', () => {
     itemInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addItem();
     });
+
+    if (shoppingList) {
+        shoppingList.addEventListener('click', (e) => {
+            const delBtn = e.target.closest('.delete-btn');
+            if (delBtn) {
+                e.stopPropagation();
+                deleteItem(delBtn.dataset.id);
+                return;
+            }
+            const checkContainer = e.target.closest('.checkbox-container');
+            if (checkContainer) {
+                toggleItem(checkContainer.dataset.id);
+            }
+        });
+    }
 
     renderList();
 

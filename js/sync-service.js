@@ -79,7 +79,7 @@ const SyncService = {
 
     getAllLocalData() {
         return {
-            version: '1.18.02',
+            version: '1.22.4',
             calendar_events: StorageService.getEvents(),
             expenses: StorageService.getExpenses(),
             shopping_list: StorageService.getShoppingList(),
@@ -165,7 +165,7 @@ const SyncService = {
             const mergedCategories = this.mergeArrays(localData.expense_categories, cloudData.expense_categories || []);
 
             const mergedData = {
-                version: '1.18.02',
+                version: '1.22.4',
                 calendar_events: this.mergeArrays(localData.calendar_events, cloudData.calendar_events),
                 expenses: this.mergeArrays(localData.expenses, cloudData.expenses),
                 shopping_list: this.mergeArrays(localData.shopping_list, cloudData.shopping_list),

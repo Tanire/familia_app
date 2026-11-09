@@ -1,6 +1,6 @@
 /**
  * StorageService - Manejo centralizado de localStorage con Auto-Sync (SMART MERGE)
- * Versión 1.18.02
+ * Versión 1.22.4
  */
 const StorageService = {
   syncTimeout: null,
@@ -118,7 +118,7 @@ const StorageService = {
   // --- Backup & Restore ---
   exportBackup() {
     const backupData = {
-      version: '1.18.02',
+      version: '1.22.4',
       exportedAt: new Date().toISOString(),
       user_profile: localStorage.getItem('user_profile') || '',
       calendar_events: this.getEvents(),

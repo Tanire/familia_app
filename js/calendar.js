@@ -79,11 +79,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    const fragment = document.createDocumentFragment();
+
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.classList.add("day");
       emptyCell.style.opacity = "0.2";
-      calendarGrid.appendChild(emptyCell);
+      fragment.appendChild(emptyCell);
     }
 
     const nowLocal = new Date();
@@ -161,8 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
         showDayDetails(dateString);
       });
 
-      calendarGrid.appendChild(dayCell);
+      fragment.appendChild(dayCell);
     }
+    calendarGrid.appendChild(fragment);
   }
 
   function renderEventChip(container, event) {
@@ -218,11 +221,16 @@ document.addEventListener("DOMContentLoaded", () => {
       day: "numeric",
     };
     detailsDate.textContent = viewDate.toLocaleDateString("es-ES", options);
+    detailsList.dataset.date = dateStr;
     detailsList.innerHTML = "";
 
     if (eventsOnDay.length === 0 && bills.length === 0) {
       detailsList.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No hay eventos ni notas para este día.</p>';
+      addEventTodayBtn.onclick = () => openModal(dateStr);
+      return;
     }
+
+    const fragment = document.createDocumentFragment();
 
     // Render Bills
     bills.forEach((bill) => {
@@ -239,7 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
             💸 Apuntar en Gastos
         </button>
       `;
-      detailsList.appendChild(item);
+      fragment.appendChild(item);
     });
 
     // Render Events
@@ -269,32 +277,34 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         ${event.note ? `<div class="detail-note" style="margin-top: 0.5rem; color: var(--text-muted);">${escapeHtml(event.note)}</div>` : ""}
       `;
-      detailsList.appendChild(item);
+      fragment.appendChild(item);
     });
 
-    // Listeners
-    detailsList.querySelectorAll(".btn-delete-event").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        deleteEvent(btn.dataset.id);
-      });
-    });
-
-    detailsList.querySelectorAll(".btn-edit-event").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        editEvent(btn.dataset.id);
-      });
-    });
-
-    detailsList.querySelectorAll(".btn-pay-bill").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        payBill(btn.dataset.id, dateStr);
-      });
-    });
-
+    detailsList.appendChild(fragment);
     addEventTodayBtn.onclick = () => openModal(dateStr);
+  }
+
+  // Delegated event listener on detailsList
+  if (detailsList) {
+    detailsList.addEventListener("click", (e) => {
+      const delBtn = e.target.closest(".btn-delete-event");
+      if (delBtn) {
+        e.stopPropagation();
+        deleteEvent(delBtn.dataset.id);
+        return;
+      }
+      const editBtn = e.target.closest(".btn-edit-event");
+      if (editBtn) {
+        e.stopPropagation();
+        editEvent(editBtn.dataset.id);
+        return;
+      }
+      const payBtn = e.target.closest(".btn-pay-bill");
+      if (payBtn) {
+        e.stopPropagation();
+        payBill(payBtn.dataset.id, detailsList.dataset.date);
+      }
+    });
   }
 
   function escapeHtml(str) {

@@ -345,51 +345,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (displayMovements.length === 0) {
             expensesList.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No hay movimientos registrados este mes para esta categoría.</div>';
-        }
+        } else {
+            const fragment = document.createDocumentFragment();
+            displayMovements.forEach((mov) => {
+                const val = parseFloat(mov.amount);
+                const isIncome = mov.type === 'income';
 
-        displayMovements.forEach((mov) => {
-            const val = parseFloat(mov.amount);
-            const isIncome = mov.type === 'income';
+                const item = document.createElement('div');
+                item.className = 'expense-item';
+                if (isIncome) item.classList.add('item-income');
+                else item.classList.add('item-expense');
 
-            const item = document.createElement('div');
-            item.className = 'expense-item';
-            if (isIncome) item.classList.add('item-income');
-            else item.classList.add('item-expense');
+                const dateOpts = { day: 'numeric', month: 'short' };
+                const dateStr = new Date(mov.date).toLocaleDateString('es-ES', dateOpts);
+                const catInfo = getCategoryInfo(mov.category, isIncome ? 'Ingreso' : 'Otros', isIncome ? '💰' : '📦');
 
-            const dateOpts = { day: 'numeric', month: 'short' };
-            const dateStr = new Date(mov.date).toLocaleDateString('es-ES', dateOpts);
-            const catInfo = getCategoryInfo(mov.category, isIncome ? 'Ingreso' : 'Otros', isIncome ? '💰' : '📦');
-
-            item.innerHTML = `
-                <div style="display:flex; align-items:center; width: 100%;">
-                    <div style="font-size: 1.5rem; margin-right: 0.75rem;">${catInfo.icon}</div>
-                    <div style="flex-grow: 1; overflow: hidden;">
-                        <div style="font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(mov.title)}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">
-                            <span style="background: var(--bg-body); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--btn-secondary-border, #E5E7EB); color: var(--text-main);">${catInfo.name}</span>
-                            • ${dateStr}
-                            ${mov.createdBy ? `• <small>${escapeHtml(mov.createdBy)}</small>` : ''}
-                            ${mov.items && mov.items.length > 0 ? `• <small style="color:var(--primary);">📄 Ticket (${mov.items.length})</small>` : ''}
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; width: 100%;">
+                        <div style="font-size: 1.5rem; margin-right: 0.75rem;">${catInfo.icon}</div>
+                        <div style="flex-grow: 1; overflow: hidden;">
+                            <div style="font-weight: 600; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(mov.title)}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                <span style="background: var(--bg-body); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--btn-secondary-border, #E5E7EB); color: var(--text-main);">${catInfo.name}</span>
+                                • ${dateStr}
+                                ${mov.createdBy ? `• <small>${escapeHtml(mov.createdBy)}</small>` : ''}
+                                ${mov.items && mov.items.length > 0 ? `• <small style="color:var(--primary);">📄 Ticket (${mov.items.length})</small>` : ''}
+                            </div>
                         </div>
+                        <div class="amount" style="margin-right: 0.75rem; font-weight: 700; font-size: 1.05rem; white-space: nowrap; color: ${isIncome ? 'var(--secondary)' : 'inherit'}">
+                            ${isIncome ? '+' : '-'}${val.toFixed(2)} €
+                        </div>
+                        <button class="btn-delete" data-id="${mov.id}" data-type="normal" title="Eliminar">✕</button>
                     </div>
-                    <div class="amount" style="margin-right: 0.75rem; font-weight: 700; font-size: 1.05rem; white-space: nowrap; color: ${isIncome ? 'var(--secondary)' : 'inherit'}">
-                        ${isIncome ? '+' : '-'}${val.toFixed(2)} €
-                    </div>
-                    <button class="btn-delete" data-id="${mov.id}" data-type="normal" title="Eliminar">✕</button>
-                </div>
-                ${renderExpenseDetails(mov)}
-            `;
+                    ${renderExpenseDetails(mov)}
+                `;
 
-            item.style.cursor = 'pointer';
-            item.onclick = (e) => {
-                if (e.target.classList.contains('btn-delete') || e.target.closest('a') || e.target.closest('button')) return;
-                const details = item.querySelector('.expense-details');
-                if (details) {
-                    details.style.display = (details.style.display === 'none') ? 'flex' : 'none';
-                }
-            };
-            expensesList.appendChild(item);
-        });
+                item.style.cursor = 'pointer';
+                fragment.appendChild(item);
+            });
+            expensesList.appendChild(fragment);
+        }
 
         // Update Header Stats
         if (totalIncomeEl) totalIncomeEl.textContent = `${income.toFixed(2)} €`;
@@ -425,8 +420,25 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (budgetContainer) {
             budgetContainer.style.display = 'none';
         }
+    }
 
-        setupDeleteListeners();
+    // Event delegation on expensesList
+    if (expensesList) {
+        expensesList.addEventListener('click', (e) => {
+            const delBtn = e.target.closest('.btn-delete');
+            if (delBtn) {
+                e.stopPropagation();
+                deleteExpense(delBtn.dataset.id);
+                return;
+            }
+            const item = e.target.closest('.expense-item');
+            if (item) {
+                const details = item.querySelector('.expense-details');
+                if (details) {
+                    details.style.display = (details.style.display === 'none') ? 'flex' : 'none';
+                }
+            }
+        });
     }
 
     function renderRecurring() {
@@ -440,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         bills.sort((a, b) => a.day - b.day);
 
+        const fragment = document.createDocumentFragment();
         bills.forEach(bill => {
             const item = document.createElement('div');
             item.className = 'expense-item';
@@ -460,20 +473,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <button class="btn-delete" data-id="${bill.id}" data-type="recurring" title="Eliminar">✕</button>
             `;
-            recurringList.appendChild(item);
+            fragment.appendChild(item);
         });
-        setupDeleteListeners();
+        recurringList.appendChild(fragment);
     }
 
-    function setupDeleteListeners() {
-        document.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.onclick = (e) => {
+    // Event delegation on recurringList
+    if (recurringList) {
+        recurringList.addEventListener('click', (e) => {
+            const delBtn = e.target.closest('.btn-delete');
+            if (delBtn) {
                 e.stopPropagation();
-                const id = e.target.dataset.id;
-                const type = e.target.dataset.type;
-                if (type === 'normal') deleteExpense(id);
-                else deleteRecurring(id);
-            };
+                deleteRecurring(delBtn.dataset.id);
+            }
         });
     }
 

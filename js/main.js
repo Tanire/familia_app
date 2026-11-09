@@ -442,3 +442,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(loadDashboardStats, 100);
   window.addEventListener('storage-updated', loadDashboardStats);
 });
+
+// Centralized Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration fail:', err));
+  });
+}

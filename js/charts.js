@@ -9,6 +9,10 @@ window.initCharts = function () {
 
 window.renderCharts = function (targetDate) {
     if (!document.getElementById('categoryChart')) return;
+    if (typeof Chart === 'undefined') {
+        setTimeout(() => window.renderCharts(targetDate), 100);
+        return;
+    }
 
     const allExpenses = StorageService.getExpenses().filter(e => !e._deleted && e.type === 'expense');
     const allIncome = StorageService.getExpenses().filter(e => !e._deleted && e.type === 'income');

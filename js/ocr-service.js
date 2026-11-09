@@ -1,20 +1,51 @@
 
-// Wrapper for Tesseract.js interaction
+// Wrapper for Tesseract.js interaction with on-demand lazy loading
 
 const OCRService = {
 
-    // Config
     worker: null,
+    _loadingPromise: null,
+
+    // Dynamic lazy-loader for Tesseract.js
+    loadTesseract: function (progressCallback) {
+        if (window.Tesseract) return Promise.resolve();
+        if (this._loadingPromise) return this._loadingPromise;
+
+        if (progressCallback) {
+            progressCallback({ status: 'Descargando motor OCR...', progress: 0.05 });
+        }
+
+        this._loadingPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+            script.async = true;
+            script.onload = () => {
+                this._loadingPromise = null;
+                resolve();
+            };
+            script.onerror = () => {
+                this._loadingPromise = null;
+                reject(new Error('No se pudo descargar la librería de escaneo OCR. Revisa tu conexión.'));
+            };
+            document.head.appendChild(script);
+        });
+
+        return this._loadingPromise;
+    },
 
     init: async function () {
         if (this.worker) return;
-        // Tesseract is loaded via CDN globally
     },
 
     scanImage: async function (imageFile, progressCallback) {
         if (!window.Tesseract) {
-            alert("La librería de escaneo no se ha cargado correctamente. Comprueba tu conexión.");
-            return null;
+            try {
+                await this.loadTesseract(progressCallback);
+            } catch (err) {
+                console.error("OCR Load Error:", err);
+                alert(err.message);
+                return null;
+            }
         }
 
         try {
